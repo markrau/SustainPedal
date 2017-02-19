@@ -26,7 +26,7 @@ for i = 1:nframes
 %     end
 end
 
-figure(2);
+figure(1);
 plot(time,1./P0_est);grid on;
 xlabel('Time in seconds');ylabel('Estimated frequency');
 
@@ -35,19 +35,33 @@ xp = [];
 %ideally this should be the steady state buffer number following onset
 %sorry for the misnomer.
 onset = 20;
-nperiods = 20;
-period = mode(nsamples(onset:onset+nperiods));
-%this next block of code basically does the following - 
-%it extracts exactly one period from each buffer starting at 0 phase
-%uncomment line 46 to see what it does
+nperiods = 200;
+
+%extract exactly one period of fundamental starting from 0 phase,
+%loop that period for nperiods and send it to sola for overlap add
+period = nsamples(onset);
 xp = [];
+[m,maxind] = max(xbuf(onset,1:period));
+ind = find_zcr_before_peak(xbuf(onset,:), maxind);
 for i = 0:nperiods
-    [m,maxind] = max(xbuf(onset+i,1:period));
-    ind = find_zcr_before_peak(xbuf(onset+i,:), maxind);
-    %figure;plot(xbuf(onset+i,ind:ind+period));
-    xp = [xp, xbuf(onset+i,ind:ind+period)];
+    xp = [xp, xbuf(onset,ind:ind+period)];
 end
 y = sola(xp,period);
+        
+
+% period = mode(nsamples(onset:onset+nperiods));
+% %this next block of code basically does the following - 
+% %it extracts exactly one period from each buffer starting at 0 phase
+% %uncomment line 46 to see what it does
+% xp = [];
+% for i = 0:nperiods
+%     [m,maxind] = max(xbuf(onset+i,1:period));
+%     ind = find_zcr_before_peak(xbuf(onset+i,:), maxind);
+%     figure(2);plot(xbuf(onset+i,ind:ind+period));hold on; grid on;
+%     xp = [xp, xbuf(onset+i,ind:ind+period)];
+% end
+% figure(2);hold off;
+% y = sola(xp,period);
 %let's hear what the reconstructed SOLA signal sounds like
 %soundsc(y,fs);
 
@@ -58,17 +72,13 @@ for n = 1:onset-1
     xcons(start:start+win-1) = xbuf(n,:);
     start = start+win;
 end
-yins = repmat(y,[1,5]);
-figure(4);
-plot(yins(1:2*length(y)));grid on;
-z = [xcons, yins];
-soundsc(z,fs);
+%linear interpolation between last sample in onset and first sample in
+%steady state for smooth transition
+interp = linspace(xcons(end), y(1), 100);
+z = [xcons, interp, y];
+sound(z,fs);
 
-%you will find obvious problems in the audio output.When I use repmat to repeat y,
-%subsequent repetitions of y are audibly discontinuous. From figure 4, it looks as
-%though phase is not aligned. I tried linear interpolation between subsequent y's 
-%to smooth the transition, but that didn't work either. Any suggestions on how 
-%to fix this? Or do you think something else is causing it?
+%audio sounds a bit 
 
 %In real time C++, we will ideally keep one fundamental period of the
 %waveform stored in an array and keep looping that in the output buffer,
@@ -77,18 +87,5 @@ soundsc(z,fs);
 %followed the last sample in the waveform we preserved, and send that out to the next
 %buffer.
 
-% nrep = 5;
-% %number of samples to be interpolated between subsequent frames
-% interp = 50;
-% ynew = zeros(1, length(y) + interp*nrep);
-% start = 1;
-% for i = 1:nrep
-%     ynew(start:start + length(y)-1) = y;
-%     ynew(start+length(y):start+length(y)+interp-1) = linspace(y(end), y(1), interp);
-%     start = start + length(y) + interp;
-% end
-% pause;
-% znew = [xcons, ynew];
-% soundsc(znew,fs);
 
 
