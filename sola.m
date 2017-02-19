@@ -1,8 +1,9 @@
 function [y] = sola(xp, period)
 
 %without overlap
-% nperiod = ceil(length(xp)/period);
-% xp = [xp, zeros(1, period*nperiod - length(xp))];
+% N = length(xp)
+% nperiod = ceil(N/period);
+% xp = [xp, zeros(1, period*nperiod - N)];
 % y = zeros(1, length(xp));
 % start = 1;
 % for n = 1:nperiod
@@ -10,6 +11,7 @@ function [y] = sola(xp, period)
 %     y(start:start + period-1) = win;
 %     start = start + period;
 % end
+% y = y(1:N);
 
 %with overlap
 ola = 0.5;
@@ -30,8 +32,10 @@ for n = 1:nperiod
 end
 %need to get rid of trailing zeros at the end of y
 y = y(1:N);
+
+
 figure(3);
-plot(y);grid on;
+plot(y(1:5*period));grid on;
 title('Reconstructed signal');
     
 end
