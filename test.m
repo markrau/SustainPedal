@@ -30,7 +30,7 @@ figure(1);
 plot(time,1./P0_est);grid on;
 xlabel('Time in seconds');ylabel('Estimated frequency');
 
-%align periods selected from first 10 buffers after onset
+%extract one period of waveform and loop infinitely
 xp = [];
 %ideally this should be the steady state buffer number following onset
 %sorry for the misnomer.
