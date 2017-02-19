@@ -32,7 +32,8 @@ xlabel('Time in seconds');ylabel('Estimated frequency');
 
 %align periods selected from first 10 buffers after onset
 xp = [];
-%ideally this should be the onset buffer number
+%ideally this should be the steady state buffer number following onset
+%sorry for the misnomer.
 onset = 20;
 nperiods = 20;
 period = mode(nsamples(onset:onset+nperiods));
