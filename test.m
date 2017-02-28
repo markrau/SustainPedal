@@ -1,8 +1,8 @@
 close all, clc;
 
 %try it with both audio files
-%[x,fs] = audioread('guitar files/G53-46201-1111-00015.wav');
-[x,fs] = audioread('guitar files/G53-50300-1111-00027.wav');
+[x,fs] = audioread('guitar files/G53-46201-1111-00015.wav');
+%[x,fs] = audioread('guitar files/G53-50300-1111-00027.wav');
 x = x';
 win = 1024;
 nframes = ceil(length(x)/win);
@@ -20,7 +20,7 @@ end
 
 %ideally this should be the steady state buffer number following onset  
 steady_state = 50;
-nperiods = 500;
+nperiods = 800;
 %detect pitch period
 period = round(yin_pitch(xbuf(steady_state,:),fs)*fs);
 
@@ -32,7 +32,7 @@ ind = find_zcr_before_peak(xbuf(steady_state,:), maxind);
 for i = 0:nperiods
     xp = [xp, xbuf(steady_state,ind:ind+period)];
 end
-y = sola(xp,period,fs);
+y = sola(xp,period);
    
 %initial part of reconstructed signal - attack is going to come from
 %original signal
@@ -43,11 +43,18 @@ for n = 1:steady_state-1
     start = start+win;
 end
 
-%this maintains continuity between initial (steady_state) and looped(steady state) regions
+%this maintains continuity between initial(onset) and looped(steady state) regions
 %leading to a smooth transition
-th = 10^-5;
+% th = 10^-4;
+% for i = length(xbuf(steady_state,:)) : -1 : 2
+%     if(abs(xbuf(steady_state,i) - y(1)) < th)  
+%         xcons(start:start+i-2) = xbuf(steady_state,1:i-1);
+%         break;
+%     end
+% end
+
 for i = length(xbuf(steady_state,:)) : -1 : 2
-    if(abs(xbuf(steady_state,i) - y(1)) < th)  
+    if(xbuf(steady_state,i) > 0 && xbuf(steady_state,i-1) <= 0)  
         xcons(start:start+i-2) = xbuf(steady_state,1:i-1);
         break;
     end
@@ -57,18 +64,20 @@ end
 %makes it sound more like a real guitar signal
 t = (0:length(y)-1)/fs;
 mod_ind = 0.05;
-ys = (1 + mod_ind*sin(2*pi*2.*t)).*y;
+fm = 2;
+ys = (1 + mod_ind*sin(2*pi*fm.*t)).*y;
 z = [xcons, ys];
 
 %multiply end of reconstructed signal (last few periods) with linearly decaying window
-lin_dec = linspace(1, 0, (100*period));
+num_decay_buf = 100;
+lin_dec = linspace(1, 0, (num_decay_buf*period));
 z = [z(1:end-length(lin_dec)), z(end-length(lin_dec)+1:end).*lin_dec];
 
 soundsc(z,fs);
 figure;
 subplot(211);
-plot(x);title('Original signal');
-subplot(212);plot(z);
+plot((0:length(x)-1)/fs,x);title('Original signal');xlabel('Time in seconds');
+subplot(212);plot((0:length(z)-1)/fs,z);xlabel('Time in seconds');
 title('Reconstructed signal');
     
 
