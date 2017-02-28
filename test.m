@@ -19,7 +19,10 @@ for i = 1:nframes
 end
 
 %ideally this should be the steady state buffer number following onset  
-steady_state = 50;
+thresh = 0.98;
+[ onsetBuff, ssBuff ] = find_onset(xbuf, fs, thresh );
+
+steady_state = ssBuff;
 nperiods = 800;
 %detect pitch period
 period = round(yin_pitch(xbuf(steady_state,:),fs)*fs);

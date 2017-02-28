@@ -4,7 +4,7 @@ function [ onsetBuff, ssBuff ] = find_onset(xbuf, fs, thresh )
 % decay to a constant since it is perceptual. 
 % xbuf -> buffered input signal (buffered signals as rows)
 % fs -> sample rate
-% thresh -> steady state threshold (1.05 might be an okay value)
+% thresh -> steady state threshold (0.98 might be an okay value)
 % onsetBuff is the buffer of the onset, returns zero if no onset found
 % ssBuff is the buffer of steady state, returns zero if none found
 
