@@ -1,8 +1,8 @@
 close all, clc;
 
 %try it with both audio files
-[x,fs] = audioread('guitar files/G53-46201-1111-00015.wav');
-%[x,fs] = audioread('guitar files/G53-50300-1111-00027.wav');
+%[x,fs] = audioread('guitar files/G53-46201-1111-00015.wav');
+[x,fs] = audioread('guitar files/G53-50300-1111-00027.wav');
 x = x';
 win = 1024;
 nframes = ceil(length(x)/win);
@@ -60,6 +60,7 @@ for i = length(xbuf(steady_state,:)) : -1 : 2
     end
 end
 
+
 %multiply y with a slowly varying amplitude envelope - amplitude modulation
 %makes it sound more like a real guitar signal
 t = (0:length(y)-1)/fs;
@@ -73,6 +74,12 @@ num_decay_buf = 100;
 lin_dec = linspace(1, 0, (num_decay_buf*period));
 z = [z(1:end-length(lin_dec)), z(end-length(lin_dec)+1:end).*lin_dec];
 
+
+%low pass filter z to remove noise
+wc = 4000/(fs/2);
+[b,a] = butter(4,wc);
+z = filter(b,a,z);
+
 soundsc(z,fs);
 figure;
 subplot(211);
@@ -80,6 +87,15 @@ plot((0:length(x)-1)/fs,x);title('Original signal');xlabel('Time in seconds');
 subplot(212);plot((0:length(z)-1)/fs,z);xlabel('Time in seconds');
 title('Reconstructed signal');
     
+figure;
+X = abs(fftshift(fft(x)));
+X = X(length(X)/2+1:end);
+X = 20*log10(X);
+Z = abs(fftshift(fft(z)));
+Z = Z(length(Z)/2+1:end);
+Z = 20*log10(Z);
+semilogx(X, 'b');hold on;
+semilogx(Z, 'r');hold off;
 
 %In real time C++, we will ideally keep one fundamental period of the
 %waveform stored in an array and keep looping that in the output buffer,
