@@ -25,6 +25,7 @@ int Q15addWrap(int x, int y) {
     return x + y;
 }
 
+
 // Q15 saturation addition
 int Q15addSat(int x, int y) {
     long temp = (long)x+(long)y;
@@ -36,14 +37,13 @@ int Q15addSat(int x, int y) {
 
 /*@brief	Estimates fundamental pitch_period and extracts exactly one pitch_period of waveform
 * 			and loops it in output buffer
-* @param 	input	Pointer to array of Q15 audio buffer
-* @param	buf_len Length of buffer incoming buffer
-* @param	fs		Sampling rate
+* @param 	input			Pointer to array of Q15 audio buffer
+* @param	buf_len 		Length of buffer incoming buffer
+* @param	fs				Sampling rate
 * @param	pitch_period	Number of samples in pitch_period of input
-* @param	output  Exactly one pitch pitch_period extracted from input and looped
+* @param	output  		Exactly one pitch pitch_period extracted from input and looped
 */
 
-float cumsum(float*,int);
 
 //Constructor
 ExtractFundamental::ExtractFundamental(int* buffer, int bufLength, long Fs){
@@ -69,6 +69,7 @@ ExtractFundamental::~ExtractFundamental(){
 
 int ExtractFundamental::yin_pitch(){
 	
+	
 	//normalise incoming input
 	float* norm_input = new float[buf_len];
 	
@@ -90,9 +91,11 @@ int ExtractFundamental::yin_pitch(){
 	//Step 2 - cumulative mean normalised difference function
 	float *d_norm = new float[buf_len];
 	d_norm[0] = 1.0;
+	float cumsum = 0;
 	
 	for(int tau = 1; tau < buf_len; tau++){
-		d_norm[tau] = (float)diff[tau]/((1/(float)tau) * cumsum(diff,tau));
+		cumsum += diff[tau];
+		d_norm[tau] = ((float)tau * diff[tau])/cumsum;
 	}
 	
 	//Step 3 - absolute thresholding
@@ -106,7 +109,7 @@ int ExtractFundamental::yin_pitch(){
 	}
 	//if no value lies below threshold, take minimum index of d_norm as lag
 	if(lag < 0){
-		float min = 1000;
+		int min = 1000;
 		for(int i =0; i < buf_len; i++){
 			if(d_norm[i] < min){
 				min = d_norm[i];
@@ -128,16 +131,81 @@ int ExtractFundamental::yin_pitch(){
 	cout << "Peak : " << peak << endl;
 	pitch_period = (int)(round((float)lag + peak));
 	return pitch_period;
-}
-
-
-float cumsum(float *d, int tau){
-	float sum = 0;
-	for(int i = 0; i < tau; i++){
-		sum += d[i];
+	
+	
+	/*
+	//trying a fixed point implementation
+		
+	long* diff =  new long[buf_len];
+	for(int i = 0; i < buf_len; i++)
+		diff[i] = 0;
+	
+	//Step 1 -calculate difference function
+	int sub = 0;
+	cout << "Printing diff" << endl;
+	for (int tau = 0; tau < buf_len; tau++){
+		for(int j = 0; j < tau; j++){
+			sub = input[j] - input[j+tau];
+			diff[tau] = Q15addWrap(diff[tau],Q15mult(sub,sub));
+		}
+		cout << diff[tau] << endl;
 	}
-	return sum;
+	
+	//Step 2 - cumulative mean normalised difference function
+	int *d_norm = new int[buf_len];
+	d_norm[0] = 1;
+	long cumsum = 1;
+	long mult = 0;
+	
+	cout << "Printing d_norm" << endl;
+	for(int tau = 1; tau < buf_len; tau++){
+		cumsum += diff[tau];
+		//Q15 division  
+		mult = (diff[tau] * (long)tau) >> FIXED_FBITS;
+		d_norm[tau] = (long)(mult << FIXED_FBITS)/cumsum;
+		cout << "Mult " << mult << endl;
+		cout << "Cumsum " << cumsum <<endl;
+		cout << d_norm[tau] << endl;
+		
+	}
+	
+	//Step 3 - absolute thresholding
+	int th = 1;
+	int lag = -1;
+	for(int i =0; i < buf_len; i++){
+		if(d_norm[i] < th){
+			lag = i;
+			break;
+		}
+	}
+	//if no value lies below threshold, take minimum index of d_norm as lag
+	if(lag < 0){
+		int min = 1000;
+		for(int i =0; i < buf_len; i++){
+			if(d_norm[i] < min){
+				min = d_norm[i];
+				lag = i;
+			}
+		}
+	}
+	cout << "Lag : " << lag << endl;
+	
+	//Step 4 - parabolic interpolation
+	int peak = 0;
+	if(lag > 0 && lag < buf_len-1){
+		int alpha = d_norm[lag-1];
+		int beta = d_norm[lag];
+		int gamma = d_norm[lag+1];
+		peak = ((alpha-gamma)/(alpha - 2*beta + gamma)) >> 1;
+	}
+	
+	cout << "Peak : " << peak << endl;
+	pitch_period = round(lag + peak);
+	return pitch_period;
+	*/
 }
+
+
 
 /*this function uses the pitch information to extract exactly one pitch 
 period from input signal and loops it into the output buffer till it has
