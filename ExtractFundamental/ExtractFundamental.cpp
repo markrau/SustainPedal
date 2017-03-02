@@ -46,16 +46,12 @@ int Q15addSat(int x, int y) {
 
 
 //Constructor
-ExtractFundamental::ExtractFundamental(int* buffer, int bufLength, long Fs){
+ExtractFundamental::ExtractFundamental(int bufLength, long Fs){
 	if(bufLength < 1)
 		buf_len = DEFAULT_BUFFER_SIZE;
 	else
 		buf_len = bufLength;
 	input = new int[buf_len];
-	//copy buffer to input
-	for(int i = 0; i < buf_len; i++){
-		input[i] = buffer[i];
-	}
 	pitch_period = 0;
 	fs = Fs;
 }
@@ -67,8 +63,12 @@ ExtractFundamental::~ExtractFundamental(){
 
 //Yin estimator to estimate pitch of incoming buffer
 
-int ExtractFundamental::yin_pitch(){
-	
+int ExtractFundamental::yin_pitch(int *buffer){
+
+	//copy buffer to input
+	for(int i = 0; i < buf_len; i++){
+		input[i] = buffer[i];
+	}
 	
 	//normalise incoming input
 	float* norm_input = new float[buf_len];

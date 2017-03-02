@@ -7,15 +7,13 @@
 
 class ExtractFundamental{
 	public:
-		ExtractFundamental(int* buffer,int bufLength,long Fs);
+		ExtractFundamental(int bufLength,long Fs);
 		~ExtractFundamental();
-		int yin_pitch();
+		int yin_pitch(int *buffer);
 		int* get_fundamental();
 		
 	private:
 		int* input;
-		int* output;
-		int *one_period;
 		int buf_len;
 		int pitch_period;
 		long fs;	
