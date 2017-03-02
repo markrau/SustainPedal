@@ -1,8 +1,8 @@
 close all, clc;
 
 %try it with both audio files
-[x,fs] = audioread('guitar files/G53-46201-1111-00015.wav');
-%[x,fs] = audioread('guitar files/G53-50300-1111-00027.wav');
+%[x,fs] = audioread('guitar files/G53-46201-1111-00015.wav');
+[x,fs] = audioread('guitar files/G53-50300-1111-00027.wav');
 x = x';
 win = 1024;
 nframes = ceil(length(x)/win);
