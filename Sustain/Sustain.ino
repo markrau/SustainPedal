@@ -35,7 +35,7 @@ const long Gain         = 32768; ///< Gain parameter
 long previousBuffFFTSum = MAX_INT16*BufferLength;        // Pervious fft buffer sum. Make the initial (negative time) buffer have the max FFT sum so no onset is detected
 int onsetFlag = 0;                                       // Keep track of whether or not a buffer has an onset
 int onsetThresh = MAX_INT16/4 ;                          // Onset detection threshold. Initialize to 4 (Q11), meaning that an onset is detected if a new buffer has 4 times the spectral energy as the previous buffer
-
+int period = 0;
 
 
 // Declare Onset object =========================================
@@ -45,7 +45,7 @@ Onset onset(BufferLength,previousBuffFFTSum);
 
 // Declare ExtractFundamental oject =============================
 //===============================================================
-ExtractFundamental extract;
+ExtractFundamental extract(BufferLength,SAMPLING_RATE_48_KHZ);
 //===============================================================
 
 
@@ -116,6 +116,12 @@ void loop()
     else{
         digitalWrite(LED2, LOW);
     }
+    
+    
+             disp.clear();
+             disp.setline(0);
+             disp.print((long)period);
+    
 }
 
 /** Audio callback function
@@ -143,6 +149,9 @@ void processAudio()
 {
   
     onsetFlag = onset.isOnset(AudioC.inputLeft, onsetThresh);
+    
+    period = extract.yin_pitch(AudioC.inputLeft);
+
   
   
     for(int n = 0; n < BufferLength; n++)
