@@ -13,6 +13,7 @@
 #include <dsplib.h>
 #include <OLED.h>
 #include "Onset.h"
+#include "ExtractFundamental.h"
 
 //================================
 
@@ -40,6 +41,11 @@ int onsetThresh = MAX_INT16/4 ;                          // Onset detection thre
 // Declare Onset object =========================================
 //===============================================================
 Onset onset(BufferLength,previousBuffFFTSum);
+//===============================================================
+
+// Declare ExtractFundamental oject =============================
+//===============================================================
+ExtractFundamental extract;
 //===============================================================
 
 
