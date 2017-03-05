@@ -1,6 +1,6 @@
 #include "ExtractFundamental.h"
 #include <stdio.h>
-#include <iostream>
+//#include <iostream>
 #include <math.h>
 using namespace std;
 
@@ -46,16 +46,12 @@ int Q15addSat(int x, int y) {
 
 
 //Constructor
-ExtractFundamental::ExtractFundamental(int* buffer, int bufLength, long Fs){
+ExtractFundamental::ExtractFundamental(int bufLength, long Fs){
 	if(bufLength < 1)
 		buf_len = DEFAULT_BUFFER_SIZE;
 	else
 		buf_len = bufLength;
 	input = new int[buf_len];
-	//copy buffer to input
-	for(int i = 0; i < buf_len; i++){
-		input[i] = buffer[i];
-	}
 	pitch_period = 0;
 	fs = Fs;
 }
@@ -67,9 +63,13 @@ ExtractFundamental::~ExtractFundamental(){
 
 //Yin estimator to estimate pitch of incoming buffer
 
-int ExtractFundamental::yin_pitch(){
+int ExtractFundamental::yin_pitch(int *buffer){
+
+	//copy buffer to input
+	for(int i = 0; i < buf_len; i++){
+		input[i] = buffer[i];
+	}
 	
-	/*
 	//normalise incoming input
 	float* norm_input = new float[buf_len];
 	
@@ -117,7 +117,7 @@ int ExtractFundamental::yin_pitch(){
 			}
 		}
 	}
-	cout << "Lag : " << lag << endl;
+	//cout << "Lag : " << lag << endl;
 	
 	//Step 4 - parabolic interpolation
 	float peak = 0;
@@ -128,12 +128,12 @@ int ExtractFundamental::yin_pitch(){
 		peak = 0.5*(alpha-gamma)/(alpha - 2*beta + gamma);
 	}
 	
-	cout << "Peak : " << peak << endl;
+	//cout << "Peak : " << peak << endl;
 	pitch_period = (int)(round((float)lag + peak));
-	return pitch_period; */
+	return pitch_period;
 	
 	
-	
+	/*
 	//trying a fixed point implementation
 		
 	long* diff =  new long[buf_len];
@@ -162,7 +162,7 @@ int ExtractFundamental::yin_pitch(){
 		cumsum += diff[tau];
 		//Q15 division  
 		mult = (diff[tau] * (long)tau) >> FIXED_FBITS;
-		d_norm[tau] = (int)((mult << FIXED_FBITS)/cumsum);
+		d_norm[tau] = (long)(mult << FIXED_FBITS)/cumsum;
 		cout << "Mult " << mult << endl;
 		cout << "Cumsum " << cumsum <<endl;
 		cout << d_norm[tau] << endl;
@@ -202,7 +202,7 @@ int ExtractFundamental::yin_pitch(){
 	cout << "Peak : " << peak << endl;
 	pitch_period = round(lag + peak);
 	return pitch_period;
-	
+	*/
 }
 
 

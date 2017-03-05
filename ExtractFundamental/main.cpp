@@ -114,8 +114,8 @@ int main()
 	cout << "Testing yin estimator output" << endl;
 	long fs = 44100;
 	int desired_period = 374;
-	ExtractFundamental fund(data2,bufLen,fs);
-	int est_period = fund.yin_pitch();
+	ExtractFundamental fund(bufLen,fs);
+	int est_period = fund.yin_pitch(data2);
 	cout << "Desired period in samples : " << desired_period << endl;
 	cout << "Estimated period in samples : " << est_period << endl;
 	
