@@ -69,7 +69,7 @@ ExtractFundamental::~ExtractFundamental(){
 
 int ExtractFundamental::yin_pitch(){
 	
-	
+	/*
 	//normalise incoming input
 	float* norm_input = new float[buf_len];
 	
@@ -130,10 +130,10 @@ int ExtractFundamental::yin_pitch(){
 	
 	cout << "Peak : " << peak << endl;
 	pitch_period = (int)(round((float)lag + peak));
-	return pitch_period;
+	return pitch_period; */
 	
 	
-	/*
+	
 	//trying a fixed point implementation
 		
 	long* diff =  new long[buf_len];
@@ -162,7 +162,7 @@ int ExtractFundamental::yin_pitch(){
 		cumsum += diff[tau];
 		//Q15 division  
 		mult = (diff[tau] * (long)tau) >> FIXED_FBITS;
-		d_norm[tau] = (long)(mult << FIXED_FBITS)/cumsum;
+		d_norm[tau] = (int)((mult << FIXED_FBITS)/cumsum);
 		cout << "Mult " << mult << endl;
 		cout << "Cumsum " << cumsum <<endl;
 		cout << d_norm[tau] << endl;
@@ -202,7 +202,7 @@ int ExtractFundamental::yin_pitch(){
 	cout << "Peak : " << peak << endl;
 	pitch_period = round(lag + peak);
 	return pitch_period;
-	*/
+	
 }
 
 
