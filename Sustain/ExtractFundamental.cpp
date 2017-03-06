@@ -63,7 +63,7 @@ ExtractFundamental::~ExtractFundamental(){
 
 //Yin estimator to estimate pitch of incoming buffer
 
-int ExtractFundamental::yin_pitch(int *buffer){
+int ExtractFundamental::yin_pitch(int* buffer){
 
 	//copy buffer to input
 	for(int i = 0; i < buf_len; i++){
@@ -89,7 +89,7 @@ int ExtractFundamental::yin_pitch(int *buffer){
 	}
 	
 	//Step 2 - cumulative mean normalised difference function
-	float *d_norm = new float[buf_len];
+	float* d_norm = new float[buf_len];
 	d_norm[0] = 1.0;
 	float cumsum = 0;
 	
@@ -251,7 +251,7 @@ int* ExtractFundamental::get_fundamental(){
 	}
 	
 	//loop extracted period into output buffer
-	int *output = new int[buf_len]; 
+	int* output = new int[buf_len]; 
 	int k = 0;
 	for(int i = 0; i < buf_len; i++){
 		output[i] = one_period[k];

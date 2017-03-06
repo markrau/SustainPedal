@@ -9,7 +9,7 @@ class ExtractFundamental{
 	public:
 		ExtractFundamental(int bufLength,long Fs);
 		~ExtractFundamental();
-		int yin_pitch(int *buffer);
+		int yin_pitch(int* buffer);
 		int* get_fundamental();
 		
 	private:
