@@ -12,8 +12,10 @@
 #include <Audio.h>
 #include <dsplib.h>
 #include <OLED.h>
+#include <serial_array.h>
 #include "Onset.h"
 #include "ExtractFundamental.h"
+#include "FLWT.h"
 
 //================================
 
@@ -28,14 +30,26 @@
 const int  BufferLength = 1024;   ///< Buffer length
 const int maxDataLength = 2048;
 const long Gain         = 32768; ///< Gain parameter
+const int baudRate      = 115200;
 
 
 
 // Gloal Variables for Onset
 long previousBuffFFTSum = MAX_INT16*BufferLength;        // Pervious fft buffer sum. Make the initial (negative time) buffer have the max FFT sum so no onset is detected
-int onsetFlag = 0;                                       // Keep track of whether or not a buffer has an onset
+int onsetFlag = 0;   
+int prevOnsetFlag = 0; // Keep track of whether or not a buffer has an onset
 int onsetThresh = MAX_INT16/4 ;                          // Onset detection threshold. Initialize to 4 (Q11), meaning that an onset is detected if a new buffer has 4 times the spectral energy as the previous buffer
 int period = 0;
+volatile int readyToProcess = 0;
+
+#pragma DATA_ALIGN(32)
+int InputLeft[BufferLength] = {0};
+#pragma DATA_ALIGN(32)
+int InputRight[BufferLength] = {0};
+#pragma DATA_ALIGN(32)
+int OutputLeft[BufferLength] = {0};
+#pragma DATA_ALIGN(32)
+int OutputRight[BufferLength] = {0};
 
 
 // Declare Onset object =========================================
@@ -43,15 +57,15 @@ int period = 0;
 Onset onset(BufferLength,previousBuffFFTSum);
 //===============================================================
 
-// Declare ExtractFundamental oject =============================
+// Declare ExtractFundamental object =============================
 //===============================================================
 ExtractFundamental extract(BufferLength,SAMPLING_RATE_48_KHZ);
 //===============================================================
 
-
-
-
-
+//Declare FLWT pitch detection object
+//================================================================
+//FLWT flwt(10, BufferLength);
+//================================================================
 
 /** Setup function
 
@@ -75,6 +89,7 @@ void setup()
     
     // Turn LED0 on
     digitalWrite(LED0, HIGH);
+    digitalWrite(LED2, LOW);
 
     //Initialize OLED module for status display	
     disp.oledInit();
@@ -97,8 +112,23 @@ void setup()
     
     if (status == 0)
     {
+        disp.clear();
         disp.print("Process ON");
     }        
+    serial_connect(baudRate);
+    
+    /*InputLeft = new int[BufferLength];
+    InputRight = new int[BufferLength];
+    OutputLeft = new int[BufferLength];
+    OutputRight = new int[BufferLength];
+    for(int i = 0; i < BufferLength; i++){
+      InputLeft[i] = 0;
+      InputRight[i] = 0;
+      OutputLeft[i] = 0;
+      OutputRight[i] = 0;
+    }*/
+    
+    delay(1000);
 }
 
 /** Main application loop
@@ -116,11 +146,12 @@ void loop()
     else{
         digitalWrite(LED2, LOW);
     }
-    
-    
-             disp.clear();
-             disp.setline(0);
-             disp.print((long)period);
+    if(readyToProcess){
+      //period = extract.hps_pitch(InputLeft, 4);
+      disp.clear();
+      disp.setline(0);
+      disp.print((long)period);
+    }
     
 }
 
@@ -143,20 +174,49 @@ void loop()
   once a full block of data is received from the audio codec digital interface and available in
   the input buffers.
   After the audioProcess() function executes to completion, data on the output buffers is sent
-  to the codec audio output.
-*/
+  to the codec audio output. */
+
 void processAudio()
 {
   
-    onsetFlag = onset.isOnset(AudioC.inputLeft, onsetThresh);
+  
+    prevOnsetFlag = onsetFlag;
+    onsetFlag = onset.isOnset(InputLeft, onsetThresh);
     
-    period = extract.yin_pitch(AudioC.inputLeft);
+    //if previous buffer was onset and current buffer is steady state
+     if(prevOnsetFlag && !onsetFlag){
+        readyToProcess = 1;       
+        for(int n = 0; n < BufferLength; n++)
+        {
+          InputLeft[n] = AudioC.inputLeft[n]; 
+          InputRight[n] = AudioC.inputRight[n];
+        }
+        period = extract.yin_pitch(InputLeft);
+        /*copyShortBuf(AudioC.inputLeft,OutputLeft, BufferLength);
+        copyShortBuf(AudioC.inputRight,OutputRight, BufferLength);*/
+     }
+    
 
-  
-  
+    //if(onsetFlag){
     for(int n = 0; n < BufferLength; n++)
     {
         AudioC.outputLeft[n]  = (Gain * AudioC.inputLeft[n])  >> 15;
         AudioC.outputRight[n] = (Gain * AudioC.inputRight[n]) >> 15;
-    }
+   
+    }//
+    
+    /*else{
+      for(int n = 0; n < BufferLength; n++)
+    {
+        AudioC.outputLeft[n]  = (Gain * OutputLeft[n])  >> 15;
+        AudioC.outputRight[n] = (Gain * OutputRight[n]) >> 15;
+   
+    }*/
+    
 }
+
+
+
+
+ 
+ 

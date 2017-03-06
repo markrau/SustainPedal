@@ -4,16 +4,25 @@
 #define ___ExtractFundamental__
 
 #include<stdio.h>
+#include<OLED.h>
+#include <serial_array.h>
+#include "dsplib.h"
 
 class ExtractFundamental{
 	public:
 		ExtractFundamental(int bufLength,long Fs);
 		~ExtractFundamental();
+                int acorr_pitch(int *buffer, int thresh);
+                int fft_pitch(int *buffer);
+                int hps_pitch(int *buffer, int nharmonics);
 		int yin_pitch(int *buffer);
-		int* get_fundamental();
+		int* get_fundamental(int *input);
+
+                //to communicate with MATLAB 
+                SerialCmd cmd;
+                
 		
 	private:
-		int* input;
 		int buf_len;
 		int pitch_period;
 		long fs;	
