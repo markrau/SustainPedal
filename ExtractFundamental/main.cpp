@@ -119,7 +119,7 @@ int main()
 	cout << "Desired period in samples : " << desired_period << endl;
 	cout << "Estimated period in samples : " << est_period << endl;
 	
-	int* output = new int[bufLen];
+	/*int* output = new int[bufLen];
 	output = fund.get_fundamental();
 	cout << "Output is :" << endl;
 	for(int i = 0; i < bufLen; i++){
@@ -141,6 +141,6 @@ int main()
 		cout << "File could not be opened" << endl;
 	}
 	
-	return 0;
+	return 0;*/
 	
 }
