@@ -32,7 +32,7 @@ const int maxDataLength = 2048;
 const long Gain         = 32768; ///< Gain parameter
 const long baudRate      = 115200;
 //const int maxBuffsAfterOnset =5;                   // number of buffers to wait before looking for new onset after one is detected
-const int maxBuffUntilSteadyState = 15;          //  number of buffers after onset until it is declared as steady state
+const int maxBuffUntilSteadyState = 25;          //  number of buffers after onset until it is declared as steady state
 
 
 /// Create instance of the serial command class
@@ -43,22 +43,14 @@ SerialCmd cmd(BufferLength);
 // Gloal Variables for Onset
 long previousBuffFFTSum = MAX_INT16*BufferLength;        // Pervious fft buffer sum. Make the initial (negative time) buffer have the max FFT sum so no onset is detected
 int onsetFlag = 0;   
-<<<<<<< HEAD
-int prevOnsetFlag = 0;  
-int prevOnsetFlag2 = 0;                                  // Keep track of whether or not a buffer has an onset
-int onsetThresh = MAX_INT16/2 ;                          // Onset detection threshold. Initialize to 4 (Q11), meaning that an onset is detected if a new buffer has 4 times the spectral energy as the previous buffer
-int period = 0;
-int numOnsets = 0;
-=======
 int prevOnsetFlag = 0; // Keep track of whether or not a buffer has an onset
-int onsetThresh = MAX_INT16*0.125 ;    // Onset detection threshold. Initialize to 4 (Q11), meaning that an onset is detected if a new buffer has 4 times the spectral energy as the previous buffer
+int onsetThresh = MAX_INT16*0.25 ;    // Onset detection threshold. Initialize to 4 (Q11), meaning that an onset is detected if a new buffer has 4 times the spectral energy as the previous buffer
 //int numBuffsAfterOnset = 0;
 int numBuffUntilSteadyState = 0;
 int period = 0;
 int pedalPressed = 1;           // variable to dictate if the effect is activated
 int foundOnset = 0;                  //Keep track of if an onset was found
 int foundSS = 0;                 // Keep track of weather steady state was hit
->>>>>>> 5293257a6390632d22f7f42ddbca00fedf69864b
 volatile int readyToProcess = 0;
 
 
@@ -76,12 +68,6 @@ int InputRight[BufferLength] = {0};
 int OutputLeft[BufferLength] = {0};
 #pragma DATA_ALIGN(32)
 int OutputRight[BufferLength] = {0};
-#pragma DATA_ALIGN(32)
-long fft_mag[BufferLength] = {0};
-#pragma DATA_ALIGN(32)
-int diff[BufferLength] = {0};
-#pragma DATA_ALIGN(32)
-int d_norm[BufferLength] = {0};
 
 #pragma DATA_ALIGN(32)
 int AudioCaptureBufferLeft[BufferLength]  = {0};
@@ -121,11 +107,14 @@ void setup()
     // Set pin as output
     pinMode(LED0, OUTPUT);
     pinMode(LED2, OUTPUT);
+    pinMode(LED1, OUTPUT);
     
     
     // Turn LED0 on
     digitalWrite(LED0, HIGH);
     digitalWrite(LED2, LOW);
+    digitalWrite(LED1, LOW);
+    
 
     //Initialize OLED module for status display	
     disp.oledInit();
@@ -155,10 +144,6 @@ void setup()
         disp.clear();
         disp.print("Process ON");
     }        
-<<<<<<< HEAD
-    serial_connect(baudRate);
-    delay(1000);
-=======
   
     
     /*InputLeft = new int[BufferLength];
@@ -174,7 +159,6 @@ void setup()
     
     // connect to matlab
     serial_connect(baudRate);
->>>>>>> 5293257a6390632d22f7f42ddbca00fedf69864b
 }
 
 /** Main application loop
@@ -196,27 +180,19 @@ void loop()
     else{
         digitalWrite(LED2, LOW);
     }
-<<<<<<< HEAD
-<<<<<<< HEAD
-    if(readyToProcess){
-      disp.clear();
-      disp.setline(0);
-      disp.print((long)numOnsets);
-=======
     
     if(foundSS){
       digitalWrite(LED1, HIGH);
     }
     else{
      digitalWrite(LED1, LOW); 
-=======
-    if(readyToProcess){
-      //period = extract.hps_pitch(InputLeft, 4);
-      disp.clear();
-      disp.setline(0);
-      disp.print((long)period);
->>>>>>> parent of 5293257... some rough looping
     }
+//    if(readyToProcess){
+//      //period = extract.hps_pitch(InputLeft, 4);
+//      disp.clear();
+//      disp.setline(0);
+//      disp.print((long)period);
+//    }
     
 
    if(numMatlabCalls <1){
@@ -257,7 +233,6 @@ void loop()
               break;
       }
     numMatlabCalls++;
->>>>>>> 5293257a6390632d22f7f42ddbca00fedf69864b
     }
   
     
@@ -287,16 +262,6 @@ void loop()
 void processAudio()
 {
   
-<<<<<<< HEAD
-    prevOnsetFlag2 = prevOnsetFlag;
-    prevOnsetFlag = onsetFlag;
-    onsetFlag = onset.isOnset(AudioC.inputLeft, onsetThresh);
-    
-    //if previous buffer was onset and current buffer is steady state
-     if(prevOnsetFlag2 && prevOnsetFlag && !onsetFlag){
-        numOnsets++;
-        readyToProcess = 0;
-=======
   
     //prevOnsetFlag = onsetFlag;
     
@@ -314,41 +279,26 @@ void processAudio()
      if(numBuffUntilSteadyState > maxBuffUntilSteadyState && pedalPressed && !foundSS){
         readyToProcess = 0;       
         foundSS = 1;
->>>>>>> 5293257a6390632d22f7f42ddbca00fedf69864b
         for(int n = 0; n < BufferLength; n++)
         {
           InputLeft[n] = AudioC.inputLeft[n]; 
           InputRight[n] = AudioC.inputRight[n];
         }
-<<<<<<< HEAD
-        period = extract.hps_pitch(InputLeft,fft_mag,4);
-        //period = extract.yin_pitch(InputLeft, diff, d_norm);
-=======
            
         //period = extract.yin_pitch(InputLeft);
-        period = extract.fft_pitch(InputLeft);
+        //period = extract.fft_pitch(InputLeft);
         //period = extract.hps_pitch(InputLeft,4);
         /*copyShortBuf(AudioC.inputLeft,OutputLeft, BufferLength);
         copyShortBuf(AudioC.inputRight,OutputRight, BufferLength);*/
->>>>>>> 5293257a6390632d22f7f42ddbca00fedf69864b
         readyToProcess = 1;
      }
     
 
-<<<<<<< HEAD
-    //if(onsetFlag){
-    for(int n = 0; n < BufferLength; n++)
-    {
-        AudioC.outputLeft[n]  = (Gain * AudioC.inputLeft[n])  >> 15;
-        AudioC.outputRight[n] = (Gain * AudioC.inputRight[n]) >> 15;
-   
-    }
-=======
     if(foundSS && pedalPressed){
       for(int n = 0; n < BufferLength; n++) {
         AudioC.outputLeft[n]  = (Gain * InputLeft[n])  >> 15;
         AudioC.outputRight[n] = (Gain * InputRight[n]) >> 15;
-      }
+      }  
     }
     else{
       for(int n = 0; n < BufferLength; n++) {
@@ -361,7 +311,6 @@ void processAudio()
     
     
     
->>>>>>> 5293257a6390632d22f7f42ddbca00fedf69864b
     
     // for Matlab
     
@@ -370,7 +319,8 @@ void processAudio()
         digitalWrite(LED0, LOW);
         for(int n = 0; n <BufferLength; n++)
         {
-            AudioCaptureBufferLeft[n]  = AudioC.inputLeft[n];
+            //AudioCaptureBufferLeft[n]  = AudioC.inputLeft[n];
+            AudioCaptureBufferLeft[n]  = InputLeft[n];
         }
         GetAudioBufferFlag = 0;
         CapturedBufferFlag = 1;
