@@ -60,10 +60,12 @@ ExtractFundamental::~ExtractFundamental(){
 }
 
 //simple pitch detection from autocorrelation function
-int ExtractFundamental::acorr_pitch(int *buffer, int thresh){
-  int* xcorr = new int[buf_len];
+int ExtractFundamental::acorr_pitch(int *buffer, int *xcorr, int thresh){
   int oflag = acorr((DATA *)buffer, (DATA *)xcorr, buf_len, buf_len, raw);
   int ref = xcorr[0];
+  /*disp.clear();
+  disp.setline(0);
+  disp.print((long)ref);*/
   for(int i = 1; i < buf_len; i++){
     if(xcorr[i] > ref - thresh && xcorr[i] < ref + thresh)
       return i;
@@ -81,7 +83,7 @@ int ExtractFundamental::fft_pitch(int *buffer){
   //find index corresponding to maximum amplitude
   long maximum = 0; int max_pos = -1;
   for(int i = 2; i < buf_len/2; i+=2){
-    mag = (buffer[i]*buffer[i])+(buffer[i+1]*buffer[i+1]);
+    mag = sqrt(buffer[i]*buffer[i])+(buffer[i+1]*buffer[i+1]);
     //make sure DC and nyquist are not included in calculating fundamental
     if(i > 0 && mag > maximum){
       maximum = mag;
@@ -103,20 +105,20 @@ int ExtractFundamental::fft_pitch(int *buffer){
 }
    
 //pitch estimation with harmonic product spectrum
-int ExtractFundamental::hps_pitch(int *buffer, int nharmonics){
+int ExtractFundamental::hps_pitch(int *buffer, long* mag, int nharmonics){
   
   rfft((DATA *)buffer, buf_len, SCALE);
-  long long *mag = new long long[buf_len >> 1];
+  //long *mag = new long[buf_len/2];
   //find magnitude of FFT
   int k = 0;
-  for(int i = 2; i < buf_len/2; i+=2){
+  for(int i = 0; i < buf_len/2; i+=2){
     mag[k++] = (buffer[i]*buffer[i])+(buffer[i+1]*buffer[i+1]);
   }
-  int minIndex = 25;
-  int maxIndex = (buf_len >>1)/nharmonics;
+  int minIndex = 1;
+  int maxIndex = (buf_len)/(2*nharmonics);
   
   int maxLocation = minIndex;
-  for(int i = minIndex; i <= maxIndex; i++){
+  for(int i = minIndex; i < maxIndex; i++){
     for(int k = 1; k <= nharmonics; k++){
       mag[i] *= mag[k*i];
     }
@@ -136,27 +138,28 @@ int ExtractFundamental::hps_pitch(int *buffer, int nharmonics){
          max2 = i;
       }
    }
+   long thresh = (6554 * mag[maxLocation]) >> 15;
    if (abs(max2 * 2 - maxLocation) < 4) {
-      if (mag[max2] > ((6554*mag[maxLocation]) >> 15)) {
+      if (mag[max2] > thresh) {
          maxLocation = max2;
       }
    }  
-   return (int)((fs * (long)maxLocation) >> 10);
+   int pfreq = (int)((fs * (long)maxLocation) >> 10);
+   return pfreq;
 } 
  
 //Yin estimator to estimate pitch of incoming buffer
-int ExtractFundamental::yin_pitch(int *input){
+int ExtractFundamental::yin_pitch(int *input, int* diff, int* d_norm){
   	
 	//normalise incoming input
-	/*float* norm_input = new float[buf_len];
+	//float* norm_input = new float[buf_len];
 	
+        /*
 	for(int i=0;i<buf_len;i++){
-		norm_input[i] = (float)input[i]/pow(2.0,15.0);
+		norm_input[i] = (float)input[i] * pow(2.0,-15.0);
 	}
 	
-	float* diff =  new float[buf_len];
-	for(int i = 0; i < buf_len; i++)
-		diff[i] = 0;
+	//float* diff =  new float[buf_len];
 	
 	//Step 1 -calculate difference function
 	for (int tau = 0; tau < buf_len; tau++){
@@ -166,7 +169,7 @@ int ExtractFundamental::yin_pitch(int *input){
 	}
 	
 	//Step 2 - cumulative mean normalised difference function
-	float *d_norm = new float[buf_len];
+	//float *d_norm = new float[buf_len];
 	d_norm[0] = 1.0;
 	float cumsum = 0;
 	
@@ -211,11 +214,11 @@ int ExtractFundamental::yin_pitch(int *input){
 	
 	
 	//trying a fixed point implementation
-	int* diff =  new int[buf_len];
-	
+        
+	//int* diff =  new int[buf_len];
 	//Step 1 - calculate difference function
 	int sub = 0;
-	long long temp = 0;
+	long temp = 0;
 	
 	for (int tau = 0; tau < buf_len; tau++){
 		temp = 0;
@@ -234,24 +237,34 @@ int ExtractFundamental::yin_pitch(int *input){
 	}
 	
 	//Step 2 - cumulative mean normalised difference function
-	int *d_norm = new int[buf_len];
-	d_norm[0] = 1;
-	long cumsum = 1;;
-	long mult = 0;
-	
+	//int *d_norm = new int[buf_len];
+	d_norm[0] = 32768;
+        long cumsum = 0;
+        long mult = 0;
+	//int* cumsum = new int[buf_len];
+	//long* mult = new long[buf_len];
+        //long temp2 = 0;	
+
 	for(int tau = 1; tau < buf_len; tau++){
-		cumsum += diff[tau];
+                cumsum += diff[tau];
+		//cumsum[tau] += temp2 >> 1;
 		//Q15 division  
 		mult = ((long)diff[tau] * (long)tau);
-		temp = (mult << FIXED_FBITS)/cumsum;
+		temp = ((long long)mult << FIXED_FBITS)/cumsum;
+                //saturate if value is too large
+		if(temp > MAX_INT16){
+			temp = MAX_INT16;
+		}
 		d_norm[tau] = (int)temp;
-		
 	}
+        //int* rexp = new int[buf_len];
+        //ldiv16((LDATA *)mult, (DATA *) cumsum, (DATA *)d_norm, (DATA *) rexp, buf_len-1); 
 	
 	//Step 3 - absolute thresholding
 	int th = 3277;
 	int lag = -1;
 	for(int i =0; i < buf_len; i++){
+                //temp2 = ((long)d_norm[i] * (long)rexp[i]) >> 15;
 		if(d_norm[i] < th){
 			lag = i;
 			break;
@@ -277,8 +290,10 @@ int ExtractFundamental::yin_pitch(int *input){
 		peak = ((alpha-gamma)/(alpha - 2*beta + gamma)) * 0.5;
 	}
 	
-	pitch_period = round(lag + (int)peak);
-	return pitch_period;
+        disp.clear();
+        disp.setline(0);
+        disp.print((long)lag);
+	pitch_period = round(lag + (int)peak); 
 }
 
 
@@ -287,9 +302,8 @@ int ExtractFundamental::yin_pitch(int *input){
 period from input signal and loops it into the output buffer till it has
 same number of samples as input signal */
 
-int* ExtractFundamental::get_fundamental(int *input){
+void ExtractFundamental::get_fundamental(int *input, int *one_period, int* output){
 	
-	int *one_period = new int[pitch_period];
 	
 	//find position of peak in fundamental
 	int peakpos = -1;
@@ -327,7 +341,6 @@ int* ExtractFundamental::get_fundamental(int *input){
 	}
 	
 	//loop extracted period into output buffer
-	int *output = new int[buf_len]; 
 	int k = 0;
 	for(int i = 0; i < buf_len; i++){
 		output[i] = one_period[k];
@@ -337,6 +350,4 @@ int* ExtractFundamental::get_fundamental(int *input){
 			k = 0;
 		}
 	}
-	
-	return output;
 }
