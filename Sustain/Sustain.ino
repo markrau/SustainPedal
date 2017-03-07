@@ -31,6 +31,8 @@ const int  BufferLength = 1024;   ///< Buffer length
 const int maxDataLength = 2048;
 const long Gain         = 32768; ///< Gain parameter
 const long baudRate      = 115200;
+//const int maxBuffsAfterOnset =5;                   // number of buffers to wait before looking for new onset after one is detected
+const int maxBuffUntilSteadyState = 15;          //  number of buffers after onset until it is declared as steady state
 
 
 /// Create instance of the serial command class
@@ -42,8 +44,13 @@ SerialCmd cmd(BufferLength);
 long previousBuffFFTSum = MAX_INT16*BufferLength;        // Pervious fft buffer sum. Make the initial (negative time) buffer have the max FFT sum so no onset is detected
 int onsetFlag = 0;   
 int prevOnsetFlag = 0; // Keep track of whether or not a buffer has an onset
-int onsetThresh = MAX_INT16*0.125 ;                          // Onset detection threshold. Initialize to 4 (Q11), meaning that an onset is detected if a new buffer has 4 times the spectral energy as the previous buffer
+int onsetThresh = MAX_INT16*0.125 ;    // Onset detection threshold. Initialize to 4 (Q11), meaning that an onset is detected if a new buffer has 4 times the spectral energy as the previous buffer
+//int numBuffsAfterOnset = 0;
+int numBuffUntilSteadyState = 0;
 int period = 0;
+int pedalPressed = 1;           // variable to dictate if the effect is activated
+int foundOnset = 0;                  //Keep track of if an onset was found
+int foundSS = 0;                 // Keep track of weather steady state was hit
 volatile int readyToProcess = 0;
 
 
@@ -127,7 +134,7 @@ void setup()
     //   SAMPLING_RATE_44_KHZ
     //   SAMPLING_RATE_48_KHZ (default)
     AudioC.setSamplingRate(SAMPLING_RATE_48_KHZ);
-    AudioC.setInputGain(0,0);
+    AudioC.setInputGain(40,40);
     
     if (status == 0)
     {
@@ -246,12 +253,22 @@ void processAudio()
 {
   
   
-    prevOnsetFlag = onsetFlag;
+    //prevOnsetFlag = onsetFlag;
+    
     onsetFlag = onset.isOnset(AudioC.inputLeft, onsetThresh);
     
+   if(onsetFlag){
+      numBuffUntilSteadyState = 0;
+      foundSS =0;
+   }     
+   numBuffUntilSteadyState++;
+
+    
+    
     //if previous buffer was onset and current buffer is steady state
-     if(prevOnsetFlag && !onsetFlag){
+     if(numBuffUntilSteadyState > maxBuffUntilSteadyState && pedalPressed && !foundSS){
         readyToProcess = 0;       
+        foundSS = 1;
         for(int n = 0; n < BufferLength; n++)
         {
           InputLeft[n] = AudioC.inputLeft[n]; 
@@ -267,21 +284,19 @@ void processAudio()
      }
     
 
-    //if(onsetFlag){
-    for(int n = 0; n < BufferLength; n++)
-    {
-        AudioC.outputLeft[n]  = (Gain * AudioC.inputLeft[n])  >> 15;
-        AudioC.outputRight[n] = (Gain * AudioC.inputRight[n]) >> 15;
-   
-    }//
-    
-    /*else{
-      for(int n = 0; n < BufferLength; n++)
-    {
-        AudioC.outputLeft[n]  = (Gain * OutputLeft[n])  >> 15;
-        AudioC.outputRight[n] = (Gain * OutputRight[n]) >> 15;
-   
-    }*/
+    if(foundSS && pedalPressed){
+      for(int n = 0; n < BufferLength; n++) {
+        AudioC.outputLeft[n]  = (Gain * InputLeft[n])  >> 15;
+        AudioC.outputRight[n] = (Gain * InputRight[n]) >> 15;
+      }
+    }
+    else{
+      for(int n = 0; n < BufferLength; n++) {
+          AudioC.outputLeft[n]  = (Gain * AudioC.inputLeft[n])  >> 15;
+          AudioC.outputRight[n] = (Gain * AudioC.inputRight[n]) >> 15;
+      }
+    }
+
     
     
     
