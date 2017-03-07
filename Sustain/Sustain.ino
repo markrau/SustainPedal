@@ -12,10 +12,10 @@
 #include <Audio.h>
 #include <dsplib.h>
 #include <OLED.h>
-#include <serial_array.h>
+#include "serial_array.h"
 #include "Onset.h"
 #include "ExtractFundamental.h"
-#include "FLWT.h"
+//#include "FLWT.h"
 
 //================================
 
@@ -30,7 +30,11 @@
 const int  BufferLength = 1024;   ///< Buffer length
 const int maxDataLength = 2048;
 const long Gain         = 32768; ///< Gain parameter
-const int baudRate      = 115200;
+const long baudRate      = 115200;
+
+
+/// Create instance of the serial command class
+SerialCmd cmd(BufferLength);
 
 
 
@@ -38,9 +42,16 @@ const int baudRate      = 115200;
 long previousBuffFFTSum = MAX_INT16*BufferLength;        // Pervious fft buffer sum. Make the initial (negative time) buffer have the max FFT sum so no onset is detected
 int onsetFlag = 0;   
 int prevOnsetFlag = 0; // Keep track of whether or not a buffer has an onset
-int onsetThresh = MAX_INT16/4 ;                          // Onset detection threshold. Initialize to 4 (Q11), meaning that an onset is detected if a new buffer has 4 times the spectral energy as the previous buffer
+int onsetThresh = MAX_INT16*0.125 ;                          // Onset detection threshold. Initialize to 4 (Q11), meaning that an onset is detected if a new buffer has 4 times the spectral energy as the previous buffer
 int period = 0;
 volatile int readyToProcess = 0;
+
+
+int numMatlabCalls = 0;
+
+
+volatile int GetAudioBufferFlag = 0; // Trigger audio buffer capture in processAudio()
+volatile int CapturedBufferFlag = 0; // Indicate that audio buffer has been captured in processAudio()
 
 #pragma DATA_ALIGN(32)
 int InputLeft[BufferLength] = {0};
@@ -50,6 +61,10 @@ int InputRight[BufferLength] = {0};
 int OutputLeft[BufferLength] = {0};
 #pragma DATA_ALIGN(32)
 int OutputRight[BufferLength] = {0};
+
+#pragma DATA_ALIGN(32)
+int AudioCaptureBufferLeft[BufferLength]  = {0};
+
 
 
 // Declare Onset object =========================================
@@ -97,8 +112,11 @@ void setup()
     disp.flip();    
     disp.setline(1);
     
+
+    
     // Audio library is configured for non-loopback mode and the specified buffer length for the ADC and DAC, respectively.
     status = AudioC.Audio(TRUE, BufferLength, BufferLength);
+    AudioC.setInputGain(0, 0);
     
     // Set codec sampling rate.  Valid sampling rates:
     //   SAMPLING_RATE_8_KHZ
@@ -109,13 +127,14 @@ void setup()
     //   SAMPLING_RATE_44_KHZ
     //   SAMPLING_RATE_48_KHZ (default)
     AudioC.setSamplingRate(SAMPLING_RATE_48_KHZ);
+    AudioC.setInputGain(0,0);
     
     if (status == 0)
     {
         disp.clear();
         disp.print("Process ON");
     }        
-    serial_connect(baudRate);
+  
     
     /*InputLeft = new int[BufferLength];
     InputRight = new int[BufferLength];
@@ -128,7 +147,8 @@ void setup()
       OutputRight[i] = 0;
     }*/
     
-    delay(1000);
+    // connect to matlab
+    serial_connect(baudRate);
 }
 
 /** Main application loop
@@ -139,19 +159,65 @@ void setup()
 */
 void loop()
 {
-    // An LED flashes to show if an onset occured. 
+  
+
+  
+      // An LED flashes to show if an onset occured. 
+      // This probably won't work if we are also printing the pitch detection to the screen. DSP shield is too slow
     if(onsetFlag){
-          digitalWrite(LED2, HIGH);
+       digitalWrite(LED2, HIGH);
     }
     else{
         digitalWrite(LED2, LOW);
     }
-    if(readyToProcess){
-      //period = extract.hps_pitch(InputLeft, 4);
+//    if(readyToProcess){
+//      //period = extract.hps_pitch(InputLeft, 4);
+//      disp.clear();
+//      disp.setline(0);
+//      disp.print((long)period);
+//    }
+    
+
+   if(numMatlabCalls <1){
+  
+      // Matlab connection
+      int command;
+        
+      cmd.recv();        
+      command = cmd.getCmd();
+        
       disp.clear();
       disp.setline(0);
-      disp.print((long)period);
+      disp.print("command: ");
+      disp.print((long)command);
+   
+      switch(command)
+      {
+          case 0: // Send buffer to matla
+          
+              GetAudioBufferFlag = 1;
+              CapturedBufferFlag = 0;
+  
+              disp.clear();
+              disp.setline(0);
+              disp.print("Cmd 0: send buffer ");
+              
+              // wait until the buffer is fully copied
+              while(!CapturedBufferFlag);
+                
+              serial_send_array(AudioCaptureBufferLeft, BufferLength);
+              
+              digitalWrite(LED0, HIGH);
+              break;
+          default:
+              disp.clear();
+              disp.setline(0);
+              disp.print("Unknown Command");
+              break;
+      }
+    numMatlabCalls++;
     }
+  
     
 }
 
@@ -181,19 +247,23 @@ void processAudio()
   
   
     prevOnsetFlag = onsetFlag;
-    onsetFlag = onset.isOnset(InputLeft, onsetThresh);
+    onsetFlag = onset.isOnset(AudioC.inputLeft, onsetThresh);
     
     //if previous buffer was onset and current buffer is steady state
      if(prevOnsetFlag && !onsetFlag){
-        readyToProcess = 1;       
+        readyToProcess = 0;       
         for(int n = 0; n < BufferLength; n++)
         {
           InputLeft[n] = AudioC.inputLeft[n]; 
           InputRight[n] = AudioC.inputRight[n];
         }
-        period = extract.yin_pitch(InputLeft);
+           
+        //period = extract.yin_pitch(InputLeft);
+        period = extract.fft_pitch(InputLeft);
+        //period = extract.hps_pitch(InputLeft,4);
         /*copyShortBuf(AudioC.inputLeft,OutputLeft, BufferLength);
         copyShortBuf(AudioC.inputRight,OutputRight, BufferLength);*/
+        readyToProcess = 1;
      }
     
 
@@ -212,6 +282,23 @@ void processAudio()
         AudioC.outputRight[n] = (Gain * OutputRight[n]) >> 15;
    
     }*/
+    
+    
+    
+    
+    
+    // for Matlab
+    
+    if (GetAudioBufferFlag)
+    {
+        digitalWrite(LED0, LOW);
+        for(int n = 0; n <BufferLength; n++)
+        {
+            AudioCaptureBufferLeft[n]  = AudioC.inputLeft[n];
+        }
+        GetAudioBufferFlag = 0;
+        CapturedBufferFlag = 1;
+    }
     
 }
 

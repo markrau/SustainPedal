@@ -72,7 +72,7 @@ int Onset::isOnset(int* input, int thresh){
     for(int i =0; i<_bufferLen; i=i+2){
         currBuffFFTSum = currBuffFFTSum + sqrt(_buffer[i]*_buffer[i]+_buffer[i+1]*_buffer[i+1]);
     }
-    if(((int)currBuffFFTSum>> 11)>thresh*(int)(_previousBuffFFTSum>>11)){
+    if((int)(currBuffFFTSum>> 11)>thresh*(int)(_previousBuffFFTSum>>11)){
         _previousBuffFFTSum =currBuffFFTSum;
         return 1;
     }

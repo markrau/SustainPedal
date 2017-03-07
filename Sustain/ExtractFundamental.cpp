@@ -72,9 +72,9 @@ int ExtractFundamental::acorr_pitch(int *buffer, int thresh){
 }
   
 
-<<<<<<< HEAD
-int ExtractFundamental::yin_pitch(int* buffer){
-=======
+//<<<<<<< HEAD
+//int ExtractFundamental::yin_pitch(int* buffer){
+//=======
 //simple pitch detection from FFT
 int ExtractFundamental::fft_pitch(int *buffer){
   
@@ -112,10 +112,10 @@ int ExtractFundamental::hps_pitch(int *buffer, int nharmonics){
   long long *mag = new long long[buf_len >> 1];
   //find magnitude of FFT
   int k = 0;
-  for(int i = 2; i < buf_len/2; i+=2){
+  for(int i = 0; i < buf_len/2; i+=2){
     mag[k++] = (buffer[i]*buffer[i])+(buffer[i+1]*buffer[i+1]);
   }
-  int minIndex = 25;
+  int minIndex = 1;
   int maxIndex = (buf_len >>1)/nharmonics;
   
   int maxLocation = minIndex;
@@ -123,15 +123,15 @@ int ExtractFundamental::hps_pitch(int *buffer, int nharmonics){
     for(int k = 1; k <= nharmonics; k++){
       mag[i] *= mag[k*i];
     }
-  if(mag[i] > mag[maxLocation])
-    maxLocation = i;
+    if(mag[i] > mag[maxLocation])
+      maxLocation = i;
   }
    // Correct for octave too high errors.  If the maximum subharmonic
    // of the measured maximum is approximately 1/2 of the maximum
    // measured frequency, AND if the ratio of the sub-harmonic
    // to the total maximum is greater than 0.2, THEN the pitch value
    // is assigned to the subharmonic.
->>>>>>> 4523fbfe8dfe930b45a1e7ffa38adced65e6a6ea
+//>>>>>>> 4523fbfe8dfe930b45a1e7ffa38adced65e6a6ea
 
    int max2 = minIndex;
    int maxsearch = (maxLocation * 3) >> 2;

@@ -12,10 +12,10 @@ class ExtractFundamental{
 	public:
 		ExtractFundamental(int bufLength,long Fs);
 		~ExtractFundamental();
-<<<<<<< HEAD
-		int yin_pitch(int* buffer);
-		int* get_fundamental();
-=======
+//<<<<<<< HEAD
+//		int yin_pitch(int* buffer);
+//		int* get_fundamental();
+//=======
                 int acorr_pitch(int *buffer, int thresh);
                 int fft_pitch(int *buffer);
                 int hps_pitch(int *buffer, int nharmonics);
@@ -25,7 +25,7 @@ class ExtractFundamental{
                 //to communicate with MATLAB 
                 SerialCmd cmd;
                 
->>>>>>> 4523fbfe8dfe930b45a1e7ffa38adced65e6a6ea
+//>>>>>>> 4523fbfe8dfe930b45a1e7ffa38adced65e6a6ea
 		
 	private:
 		int buf_len;
