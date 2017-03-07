@@ -74,6 +74,9 @@ int ExtractFundamental::acorr_pitch(int *buffer, int *xcorr, int thresh){
 }
   
 
+//<<<<<<< HEAD
+//int ExtractFundamental::yin_pitch(int* buffer){
+//=======
 //simple pitch detection from FFT
 int ExtractFundamental::fft_pitch(int *buffer){
   
@@ -115,21 +118,26 @@ int ExtractFundamental::hps_pitch(int *buffer, long* mag, int nharmonics){
     mag[k++] = (buffer[i]*buffer[i])+(buffer[i+1]*buffer[i+1]);
   }
   int minIndex = 1;
-  int maxIndex = (buf_len)/(2*nharmonics);
+//<<<<<<< HEAD
+  //int maxIndex = (buf_len)/(2*nharmonics);
+//=======
+  int maxIndex = (buf_len >>1)/nharmonics;
+//>>>>>>> 5293257a6390632d22f7f42ddbca00fedf69864b
   
   int maxLocation = minIndex;
   for(int i = minIndex; i < maxIndex; i++){
     for(int k = 1; k <= nharmonics; k++){
       mag[i] *= mag[k*i];
     }
-  if(mag[i] > mag[maxLocation])
-    maxLocation = i;
+    if(mag[i] > mag[maxLocation])
+      maxLocation = i;
   }
    // Correct for octave too high errors.  If the maximum subharmonic
    // of the measured maximum is approximately 1/2 of the maximum
    // measured frequency, AND if the ratio of the sub-harmonic
    // to the total maximum is greater than 0.2, THEN the pitch value
    // is assigned to the subharmonic.
+//>>>>>>> 4523fbfe8dfe930b45a1e7ffa38adced65e6a6ea
 
    int max2 = minIndex;
    int maxsearch = (maxLocation * 3) >> 2;
@@ -169,7 +177,11 @@ int ExtractFundamental::yin_pitch(int *input, int* diff, int* d_norm){
 	}
 	
 	//Step 2 - cumulative mean normalised difference function
+<<<<<<< HEAD
 	//float *d_norm = new float[buf_len];
+=======
+	float* d_norm = new float[buf_len];
+>>>>>>> 5293257a6390632d22f7f42ddbca00fedf69864b
 	d_norm[0] = 1.0;
 	float cumsum = 0;
 	
@@ -243,7 +255,7 @@ int ExtractFundamental::yin_pitch(int *input, int* diff, int* d_norm){
         long mult = 0;
 	//int* cumsum = new int[buf_len];
 	//long* mult = new long[buf_len];
-        //long temp2 = 0;	
+    //long temp2 = 0;	
 
 	for(int tau = 1; tau < buf_len; tau++){
                 cumsum += diff[tau];
@@ -341,6 +353,10 @@ void ExtractFundamental::get_fundamental(int *input, int *one_period, int* outpu
 	}
 	
 	//loop extracted period into output buffer
+//<<<<<<< HEAD
+//=======
+//	int* output = new int[buf_len]; 
+//>>>>>>> 5293257a6390632d22f7f42ddbca00fedf69864b
 	int k = 0;
 	for(int i = 0; i < buf_len; i++){
 		output[i] = one_period[k];
