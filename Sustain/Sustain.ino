@@ -32,7 +32,7 @@ const int maxDataLength = 2048;
 const long Gain         = 32768; ///< Gain parameter
 const long baudRate      = 115200;
 //const int maxBuffsAfterOnset =5;                   // number of buffers to wait before looking for new onset after one is detected
-const int maxBuffUntilSteadyState = 15;          //  number of buffers after onset until it is declared as steady state
+const int maxBuffUntilSteadyState = 25;          //  number of buffers after onset until it is declared as steady state
 
 
 /// Create instance of the serial command class
@@ -44,7 +44,7 @@ SerialCmd cmd(BufferLength);
 long previousBuffFFTSum = MAX_INT16*BufferLength;        // Pervious fft buffer sum. Make the initial (negative time) buffer have the max FFT sum so no onset is detected
 int onsetFlag = 0;   
 int prevOnsetFlag = 0; // Keep track of whether or not a buffer has an onset
-int onsetThresh = MAX_INT16*0.125 ;    // Onset detection threshold. Initialize to 4 (Q11), meaning that an onset is detected if a new buffer has 4 times the spectral energy as the previous buffer
+int onsetThresh = MAX_INT16*0.25 ;    // Onset detection threshold. Initialize to 4 (Q11), meaning that an onset is detected if a new buffer has 4 times the spectral energy as the previous buffer
 //int numBuffsAfterOnset = 0;
 int numBuffUntilSteadyState = 0;
 int period = 0;
@@ -107,11 +107,14 @@ void setup()
     // Set pin as output
     pinMode(LED0, OUTPUT);
     pinMode(LED2, OUTPUT);
+    pinMode(LED1, OUTPUT);
     
     
     // Turn LED0 on
     digitalWrite(LED0, HIGH);
     digitalWrite(LED2, LOW);
+    digitalWrite(LED1, LOW);
+    
 
     //Initialize OLED module for status display	
     disp.oledInit();
@@ -177,12 +180,19 @@ void loop()
     else{
         digitalWrite(LED2, LOW);
     }
-    if(readyToProcess){
-      //period = extract.hps_pitch(InputLeft, 4);
-      disp.clear();
-      disp.setline(0);
-      disp.print((long)period);
+    
+    if(foundSS){
+      digitalWrite(LED1, HIGH);
     }
+    else{
+     digitalWrite(LED1, LOW); 
+    }
+//    if(readyToProcess){
+//      //period = extract.hps_pitch(InputLeft, 4);
+//      disp.clear();
+//      disp.setline(0);
+//      disp.print((long)period);
+//    }
     
 
    if(numMatlabCalls <1){
@@ -276,7 +286,7 @@ void processAudio()
         }
            
         //period = extract.yin_pitch(InputLeft);
-        period = extract.fft_pitch(InputLeft);
+        //period = extract.fft_pitch(InputLeft);
         //period = extract.hps_pitch(InputLeft,4);
         /*copyShortBuf(AudioC.inputLeft,OutputLeft, BufferLength);
         copyShortBuf(AudioC.inputRight,OutputRight, BufferLength);*/
@@ -288,7 +298,7 @@ void processAudio()
       for(int n = 0; n < BufferLength; n++) {
         AudioC.outputLeft[n]  = (Gain * InputLeft[n])  >> 15;
         AudioC.outputRight[n] = (Gain * InputRight[n]) >> 15;
-      }
+      }  
     }
     else{
       for(int n = 0; n < BufferLength; n++) {
@@ -309,7 +319,8 @@ void processAudio()
         digitalWrite(LED0, LOW);
         for(int n = 0; n <BufferLength; n++)
         {
-            AudioCaptureBufferLeft[n]  = AudioC.inputLeft[n];
+            //AudioCaptureBufferLeft[n]  = AudioC.inputLeft[n];
+            AudioCaptureBufferLeft[n]  = InputLeft[n];
         }
         GetAudioBufferFlag = 0;
         CapturedBufferFlag = 1;
