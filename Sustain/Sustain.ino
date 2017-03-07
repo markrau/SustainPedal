@@ -170,12 +170,12 @@ void loop()
     else{
         digitalWrite(LED2, LOW);
     }
-//    if(readyToProcess){
-//      //period = extract.hps_pitch(InputLeft, 4);
-//      disp.clear();
-//      disp.setline(0);
-//      disp.print((long)period);
-//    }
+    if(readyToProcess){
+      //period = extract.hps_pitch(InputLeft, 4);
+      disp.clear();
+      disp.setline(0);
+      disp.print((long)period);
+    }
     
 
    if(numMatlabCalls <1){
