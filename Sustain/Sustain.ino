@@ -37,9 +37,11 @@ const int baudRate      = 115200;
 // Gloal Variables for Onset
 long previousBuffFFTSum = MAX_INT16*BufferLength;        // Pervious fft buffer sum. Make the initial (negative time) buffer have the max FFT sum so no onset is detected
 int onsetFlag = 0;   
-int prevOnsetFlag = 0; // Keep track of whether or not a buffer has an onset
-int onsetThresh = MAX_INT16/4 ;                          // Onset detection threshold. Initialize to 4 (Q11), meaning that an onset is detected if a new buffer has 4 times the spectral energy as the previous buffer
+int prevOnsetFlag = 0;  
+int prevOnsetFlag2 = 0;                                  // Keep track of whether or not a buffer has an onset
+int onsetThresh = MAX_INT16/2 ;                          // Onset detection threshold. Initialize to 4 (Q11), meaning that an onset is detected if a new buffer has 4 times the spectral energy as the previous buffer
 int period = 0;
+int numOnsets = 0;
 volatile int readyToProcess = 0;
 
 #pragma DATA_ALIGN(32)
@@ -50,6 +52,12 @@ int InputRight[BufferLength] = {0};
 int OutputLeft[BufferLength] = {0};
 #pragma DATA_ALIGN(32)
 int OutputRight[BufferLength] = {0};
+#pragma DATA_ALIGN(32)
+long fft_mag[BufferLength] = {0};
+#pragma DATA_ALIGN(32)
+int diff[BufferLength] = {0};
+#pragma DATA_ALIGN(32)
+int d_norm[BufferLength] = {0};
 
 
 // Declare Onset object =========================================
@@ -116,18 +124,6 @@ void setup()
         disp.print("Process ON");
     }        
     serial_connect(baudRate);
-    
-    /*InputLeft = new int[BufferLength];
-    InputRight = new int[BufferLength];
-    OutputLeft = new int[BufferLength];
-    OutputRight = new int[BufferLength];
-    for(int i = 0; i < BufferLength; i++){
-      InputLeft[i] = 0;
-      InputRight[i] = 0;
-      OutputLeft[i] = 0;
-      OutputRight[i] = 0;
-    }*/
-    
     delay(1000);
 }
 
@@ -147,10 +143,9 @@ void loop()
         digitalWrite(LED2, LOW);
     }
     if(readyToProcess){
-      //period = extract.hps_pitch(InputLeft, 4);
       disp.clear();
       disp.setline(0);
-      disp.print((long)period);
+      disp.print((long)numOnsets);
     }
     
 }
@@ -179,21 +174,22 @@ void loop()
 void processAudio()
 {
   
-  
+    prevOnsetFlag2 = prevOnsetFlag;
     prevOnsetFlag = onsetFlag;
-    onsetFlag = onset.isOnset(InputLeft, onsetThresh);
+    onsetFlag = onset.isOnset(AudioC.inputLeft, onsetThresh);
     
     //if previous buffer was onset and current buffer is steady state
-     if(prevOnsetFlag && !onsetFlag){
-        readyToProcess = 1;       
+     if(prevOnsetFlag2 && prevOnsetFlag && !onsetFlag){
+        numOnsets++;
+        readyToProcess = 0;
         for(int n = 0; n < BufferLength; n++)
         {
           InputLeft[n] = AudioC.inputLeft[n]; 
           InputRight[n] = AudioC.inputRight[n];
         }
-        period = extract.yin_pitch(InputLeft);
-        /*copyShortBuf(AudioC.inputLeft,OutputLeft, BufferLength);
-        copyShortBuf(AudioC.inputRight,OutputRight, BufferLength);*/
+        period = extract.hps_pitch(InputLeft,fft_mag,4);
+        //period = extract.yin_pitch(InputLeft, diff, d_norm);
+        readyToProcess = 1;
      }
     
 
@@ -203,7 +199,7 @@ void processAudio()
         AudioC.outputLeft[n]  = (Gain * AudioC.inputLeft[n])  >> 15;
         AudioC.outputRight[n] = (Gain * AudioC.inputRight[n]) >> 15;
    
-    }//
+    }
     
     /*else{
       for(int n = 0; n < BufferLength; n++)
