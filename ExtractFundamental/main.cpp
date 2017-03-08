@@ -5,8 +5,8 @@
 #include <fstream>
 #include "ExtractFundamental.h"
 #include "ExtractFundamental.cpp"
-#include "OLA.h"
-#include "OLA.cpp"
+#include "LoopAudio.h"
+#include "LoopAudio.cpp"
 
 using namespace std;
 int main()
@@ -113,16 +113,16 @@ int main()
 	-494,-503,-510,-515,-518,-517,-514,-510,-503,-492,-479,-460,-439,-412,-383,-354,-322,-287,-251,-211,-167,-122,-76,-25,26,79,130,
 	183,234,288,339,389,437,483,528,567,606,642,675,701,726,746,763,776,785,792,792,790,783,774,761};
 	
-	cout << "Testing yin estimator output" << endl;
+	//cout << "Testing yin estimator output" << endl;
 	long fs = 44100;
-	int desired_period = 374;
+	int desired_period = 300;
 	ExtractFundamental fund(bufLen,fs);
-	int est_period = fund.yin_pitch(data2);
+	//int est_period = fund.yin_pitch(data2);
 	cout << "Desired period in samples : " << desired_period << endl;
-	cout << "Estimated period in samples : " << est_period << endl;
+	//cout << "Estimated period in samples : " << est_period << endl;
 	
-	int* output = new int[bufLen];
-	output = fund.get_fundamental();
+	//int* output = new int[bufLen];
+	//output = fund.get_fundamental();
 	//cout << "Output is :" << endl;
 	//for(int i = 0; i < bufLen; i++){
 		//cout << output[i] << endl;
@@ -195,14 +195,18 @@ int main()
 	2894,2877,2860,2844,2828,2813,2799,2785,2772,2759,2747,2735,2724,2713,2704,2694,2685,2677,2669,2662,2656,2650,2644,2640,
 	2635,2632,2629,2626,2624,2623,2622,2621};
 	
-	OLA overlap(fs,bufLen,bufLen/2,window);
+	
+	LoopAudio loop(bufLen,15);
 	int *curBuf = new int[bufLen];
-	ofstream fout("overlap_add_result2.txt", std::ios_base::app);
+	ofstream fout("loop_audio_result1.txt", std::ios_base::app);
+	//get period
+	loop.getPitchPeriod(data);
+	
 	
 	if(fout.is_open()){
 		cout << "File opened successfully" << endl;
-		for(int n = 0; n < 4;n++){
-			overlap.overlap_add(data2, curBuf);
+		for(int n = 0; n < 10;n++){
+			loop.loopBuffer(data,curBuf);
 			for (int i = 0; i < bufLen; i++){
 				fout << curBuf[i] << ",";
 			}
