@@ -2,7 +2,7 @@
 //  Onset.h
 //
 //
-//  Created by Terry Kong on 2/12/16.
+//  Created by Mark Rau
 //
 //
 
@@ -19,7 +19,6 @@
 
 class Onset {
 public:
-    //Onset(int bufferLen);
     Onset(int bufferLen, long previousBuffFFTSum);
     ~Onset();
     int isOnset(int* input, int thresh);

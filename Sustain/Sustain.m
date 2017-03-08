@@ -13,7 +13,7 @@
 %% Define constants for the connection
 baud = 115200;
 % comport = 'COM6';
-comport = '/dev/tty.usbserial-145B';
+comport = '/dev/tty.usbserial-144B';
 
 % Connect to the DSP Shield using a handshake
 [s, connected] = serial_connect(comport, baud);

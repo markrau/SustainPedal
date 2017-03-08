@@ -7,7 +7,7 @@
 //
 
 #include "Onset.h"
-#include <math.h>      // std::complex, std::abs
+#include <math.h>      
 #include <OLED.h>
 
 
@@ -37,8 +37,6 @@ Onset::Onset(int bufferLen, long previousBuffFFTSum) {
     }
     _buffer = new int[bufferLen];
     _previousBuffFFTSum = previousBuffFFTSum;
-    
-    //currBuffFFTSum = 0;
 }
 
 /** Standard destructor */
@@ -71,7 +69,7 @@ int Onset::isOnset(int* input, int thresh){
     currBuffFFTSum = 0;
     rfft((DATA *)_buffer, _bufferLen, SCALE);
     for(int i =0; i<_bufferLen; i=i+2){
-        // ignored the square root, hopefully it isn't a problem
+        // ignored the square root to save computations
         currBuffFFTSum = currBuffFFTSum + ((long)(q.Q15mult(_buffer[i],_buffer[i])+q.Q15mult(_buffer[i+1],_buffer[i+1])) << 15);
     }
     // Need to shift by <<4 at the end to make up for thresh being a Q11 number
@@ -84,18 +82,8 @@ int Onset::isOnset(int* input, int thresh){
         _previousBuffFFTSum =currBuffFFTSum;
         return 0;
     }
+}
 
-    
-    
-}
-long Onset::returnCurrFFT(){
-  return currBuffFFTSum;
-  //return _buffer[10];
-}
-long Onset::returnPrevFFT(){
-  return threshMultByBuff;
-  //return _previousBuffFFTSum;
-}
 
 
 
