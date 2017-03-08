@@ -14,7 +14,6 @@ class LoopAudio{
 		int buf_len;
 		int s1;
 		int s2;
-		//int periodLength;
 		int val;
 		int prevVal;
 		int thresh;

@@ -37,7 +37,7 @@ const int maxBuffUntilSteadyState = 30;       //  number of buffers after onset 
 int *filterState;                             // filter state for the LP filter for period detection
 const int filterLength = 188;                 // length of filter for period detection
 
-// Filter coefficients
+// Filter coefficients, taken from a Matlab Parks McClellan LP filter design with passband until 1kHz
 const int coeff[filterLength] = 
             {-142,76,63,55,50,48,47,46,45,44,42,38,34,29,23,15,7,-3,-13,-23,-33,-44,-53,-62,-70,-76,-81,-83,-84,
             -82,-77,-70,-60,-47,-33,-16,2,21,41,62,82,101,119,134,147,156,161,163,159,151,138,120,97,70,39,4,-34,

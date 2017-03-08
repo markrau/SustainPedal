@@ -58,8 +58,6 @@ int LoopAudio::getPitchPeriod(int *curInBuf){
 		}
 	}
 	
-	//periodLength = s2-s1;
-        //return periodLength;
         return (s2-s1);
 	
 }
