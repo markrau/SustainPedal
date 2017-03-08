@@ -14,7 +14,8 @@
 #include <OLED.h>
 #include "serial_array.h"
 #include "Onset.h"
-#include "ExtractFundamental.h"
+//#include "ExtractFundamental.h"
+//#include "Q15arithmetic.h"
 //#include "FLWT.h"
 
 //================================
@@ -51,6 +52,21 @@ int period = 0;
 int pedalPressed = 1;           // variable to dictate if the effect is activated
 int foundOnset = 0;                  //Keep track of if an onset was found
 int foundSS = 0;                 // Keep track of weather steady state was hit
+int threshPot = 0;
+int onSwitchRead = 0;
+
+int analogPin3 = 3;     // potentiometer wiper (middle terminal) connected to analog pin 3, outside leads to ground and +5V
+int analogPin2 = 2;     // on off switch. 
+
+
+
+// Some variables for debugging
+long currBuffFFT =0;
+long prevBuffFFT = 0;
+
+
+
+
 volatile int readyToProcess = 0;
 
 
@@ -81,7 +97,7 @@ Onset onset(BufferLength,previousBuffFFTSum);
 
 // Declare ExtractFundamental object =============================
 //===============================================================
-ExtractFundamental extract(BufferLength,SAMPLING_RATE_48_KHZ);
+//ExtractFundamental extract(BufferLength,SAMPLING_RATE_48_KHZ);
 //===============================================================
 
 //Declare FLWT pitch detection object
@@ -136,8 +152,8 @@ void setup()
     //   SAMPLING_RATE_32_KHZ
     //   SAMPLING_RATE_44_KHZ
     //   SAMPLING_RATE_48_KHZ (default)
-    AudioC.setSamplingRate(SAMPLING_RATE_48_KHZ);
-    AudioC.setInputGain(40,40);
+    AudioC.setSamplingRate(SAMPLING_RATE_8_KHZ);
+    AudioC.setInputGain(0,0);
     
     if (status == 0)
     {
@@ -169,6 +185,41 @@ void setup()
 */
 void loop()
 {
+  // For some reason the max value read by the DSP shield is 120, so bit shift it by 7
+  threshPot = analogRead(analogPin3);
+  onsetThresh = threshPot << 7;
+
+     
+  onSwitchRead = analogRead(analogPin2);
+  if(onSwitchRead > 40){
+    pedalPressed =1;
+  }
+  else{
+    pedalPressed = 0;
+  }
+//     disp.clear();
+//     disp.setline(0);
+//     disp.print((long)onsetThresh);
+    
+    
+     disp.clear();
+     disp.setline(0);
+     disp.print((long)currBuffFFT);
+     disp.setline(1);
+     disp.print((long)prevBuffFFT);
+     
+    
+
+
+     
+     
+     
+     
+  
+  
+  //for the volume control
+  // using a bit shift of 3 on the output volume to bring the max value from 1023 to 127, hopefully this will work and not e too sketchy
+  //AudioC.setOutputVolume(outputVolume >>3, outputVolume >>3);
   
 
   
@@ -266,6 +317,9 @@ void processAudio()
     //prevOnsetFlag = onsetFlag;
     
     onsetFlag = onset.isOnset(AudioC.inputLeft, onsetThresh);
+    currBuffFFT = onset.returnCurrFFT();
+    prevBuffFFT = onset.returnPrevFFT();
+    
     
    if(onsetFlag){
       numBuffUntilSteadyState = 0;

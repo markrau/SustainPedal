@@ -13,6 +13,7 @@
 
 
 
+
 #define DEFAULT_BUFFER_SIZE 1024
 
 
@@ -67,12 +68,15 @@ int Onset::isOnset(int* input, int thresh){
         _buffer[i] = input[i];
     }
     
-    long currBuffFFTSum = 0;
+    currBuffFFTSum = 0;
     rfft((DATA *)_buffer, _bufferLen, SCALE);
     for(int i =0; i<_bufferLen; i=i+2){
-        currBuffFFTSum = currBuffFFTSum + sqrt(_buffer[i]*_buffer[i]+_buffer[i+1]*_buffer[i+1]);
+        // ignored the square root, hopefully it isn't a problem
+        currBuffFFTSum = currBuffFFTSum + ((long)(q.Q15mult(_buffer[i],_buffer[i])+q.Q15mult(_buffer[i+1],_buffer[i+1])) << 15);
     }
-    if((int)(currBuffFFTSum>> 11)>thresh*(int)(_previousBuffFFTSum>>11)){
+    // Need to shift by <<4 at the end to make up for thresh being a Q11 number
+    threshMultByBuff = ((long)thresh*(_previousBuffFFTSum >> 15) <<4);
+    if(currBuffFFTSum> threshMultByBuff ){
         _previousBuffFFTSum =currBuffFFTSum;
         return 1;
     }
@@ -80,8 +84,17 @@ int Onset::isOnset(int* input, int thresh){
         _previousBuffFFTSum =currBuffFFTSum;
         return 0;
     }
+
     
     
+}
+long Onset::returnCurrFFT(){
+  return currBuffFFTSum;
+  //return _buffer[10];
+}
+long Onset::returnPrevFFT(){
+  return threshMultByBuff;
+  //return _previousBuffFFTSum;
 }
 
 
