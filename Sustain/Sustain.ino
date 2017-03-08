@@ -152,7 +152,7 @@ void setup()
     //   SAMPLING_RATE_32_KHZ
     //   SAMPLING_RATE_44_KHZ
     //   SAMPLING_RATE_48_KHZ (default)
-    AudioC.setSamplingRate(SAMPLING_RATE_8_KHZ);
+    AudioC.setSamplingRate(SAMPLING_RATE_48_KHZ);
     AudioC.setInputGain(0,0);
     
     if (status == 0)
@@ -185,7 +185,7 @@ void setup()
 */
 void loop()
 {
-  // For some reason the max value read by the DSP shield is 120, so bit shift it by 7
+  // For some reason the max value read by the DSP shield is 120, so bit shift it by 7. Knob turned to left gives steep onset detection, knob turned to right gives easy onset detection
   threshPot = analogRead(analogPin3);
   onsetThresh = threshPot << 7;
 
@@ -196,17 +196,22 @@ void loop()
   }
   else{
     pedalPressed = 0;
+    for(int n = 0; n < BufferLength; n++)
+        {
+          InputLeft[n] = 0; 
+          InputRight[n] = 0;
+        }
   }
 //     disp.clear();
 //     disp.setline(0);
 //     disp.print((long)onsetThresh);
     
-    
-     disp.clear();
-     disp.setline(0);
-     disp.print((long)currBuffFFT);
-     disp.setline(1);
-     disp.print((long)prevBuffFFT);
+//    
+//     disp.clear();
+//     disp.setline(0);
+//     disp.print((long)currBuffFFT);
+//     disp.setline(1);
+//     disp.print((long)prevBuffFFT);
      
     
 
@@ -314,11 +319,11 @@ void processAudio()
 {
   
   
-    //prevOnsetFlag = onsetFlag;
+   
     
     onsetFlag = onset.isOnset(AudioC.inputLeft, onsetThresh);
-    currBuffFFT = onset.returnCurrFFT();
-    prevBuffFFT = onset.returnPrevFFT();
+//    currBuffFFT = onset.returnCurrFFT();
+//    prevBuffFFT = onset.returnPrevFFT();
     
     
    if(onsetFlag){
@@ -373,7 +378,6 @@ void processAudio()
         digitalWrite(LED0, LOW);
         for(int n = 0; n <BufferLength; n++)
         {
-            //AudioCaptureBufferLeft[n]  = AudioC.inputLeft[n];
             AudioCaptureBufferLeft[n]  = InputLeft[n];
         }
         GetAudioBufferFlag = 0;
