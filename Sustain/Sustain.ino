@@ -32,7 +32,7 @@ const int  BufferLength = 1024;               //< Buffer length
 const int maxDataLength = 2048;
 const long Gain         = 32768;              //< Gain parameter
 const long baudRate      = 115200;            // baudRate for Matlab
-const int maxBuffUntilSteadyState = 30;       //  number of buffers after onset until it is declared as steady state
+const int maxBuffUntilSteadyState = 20;       //  number of buffers after onset until it is declared as steady state
 
 int *filterState;                             // filter state for the LP filter for period detection
 const int filterLength = 188;                 // length of filter for period detection
@@ -290,7 +290,7 @@ void processAudio()
         for(int n = 0; n < BufferLength; n++)
         {
           InputLeft[n] = AudioC.inputLeft[n]; 
-          InputRight[n] = AudioC.inputRight[n];
+          //InputRight[n] = AudioC.inputRight[n];
         }
                
         fir((DATA*)InputLeft, (DATA*)coeff, (DATA*)filtOut, (DATA*)filterState, BufferLength, filterLength);
@@ -302,13 +302,13 @@ void processAudio()
       loopAudio.loopBuffer(InputLeft,OutputLeft,period);
       for(int n = 0; n < BufferLength; n++) {
         AudioC.outputLeft[n]  = (Gain * OutputLeft[n])  >> 15;
-        AudioC.outputRight[n] = (Gain * OutputLeft[n]) >> 15;
+       // AudioC.outputRight[n] = (Gain * OutputLeft[n]) >> 15;
       }  
     }
     else{
       for(int n = 0; n < BufferLength; n++) {
           AudioC.outputLeft[n]  = (Gain * AudioC.inputLeft[n])  >> 15;
-          AudioC.outputRight[n] = (Gain * AudioC.inputLeft[n]) >> 15;
+        // AudioC.outputRight[n] = (Gain * AudioC.inputLeft[n]) >> 15;
       }
     }
 
@@ -319,7 +319,7 @@ void processAudio()
         digitalWrite(LED0, LOW);
         for(int n = 0; n <BufferLength; n++)
         {
-            AudioCaptureBufferLeft[n]  = InputLeft[n];
+            AudioCaptureBufferLeft[n]  = OutputLeft[n];
         }
         GetAudioBufferFlag = 0;
         CapturedBufferFlag = 1;
