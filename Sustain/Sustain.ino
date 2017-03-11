@@ -65,8 +65,6 @@ int foundOnset = 0;                                      // Keep track of if an 
 int foundSS = 0;                                         // Keep track of weather steady state was hit
 int threshPot = 0;                                       // Onset detection threshold value to be changed bby potentiometer via arduino
 int onSwitchRead = 0;                                    // variable to check if thew arduino on switch is pressed
-int periodThresh = 8;                                    // Threshold for comparing values in the period detection
-
 int analogPin3 = 3;                                      // potentiometer wiper (middle terminal) connected to analog pin 3, outside leads to ground and +5V
 int analogPin2 = 2;                                      // on off switch. 
 
@@ -98,7 +96,7 @@ Onset onset(BufferLength,previousBuffFFTSum);
 
 //Declare LoopBuffer pitch detection object
 //================================================================
-LoopAudio loopAudio(BufferLength, periodThresh);
+LoopAudio loopAudio(BufferLength);
 //================================================================
 
 /** Setup function
@@ -283,8 +281,7 @@ void processAudio()
    numBuffUntilSteadyState++;
 
     //if previous buffer was onset and current buffer is steady state
-     if(numBuffUntilSteadyState > maxBuffUntilSteadyState && pedalPressed && !foundSS){
-        //readyToProcess = 0;       
+     if(numBuffUntilSteadyState > maxBuffUntilSteadyState && pedalPressed && !foundSS){     
         foundSS = 1;
         
         for(int n = 0; n < BufferLength; n++)
@@ -294,7 +291,7 @@ void processAudio()
         }
                
         fir((DATA*)InputLeft, (DATA*)coeff, (DATA*)filtOut, (DATA*)filterState, BufferLength, filterLength);
-        period = loopAudio.getPitchPeriod(filtOut);
+        period = loopAudio.getPitchRobust(filtOut);
      }
     
 
