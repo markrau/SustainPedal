@@ -8,16 +8,17 @@
 
 #define DEFAULT_BUFFER_SIZE 1024
 #define MAX_INT16   	    32767
+#define MAX_LLONG64         9223372036854775807
 
 
 //=================================================================================================================================
 /*@brief	Extracts fundamental and loops it in consecutive output buffers		
-* @param 	minDistane					Minimum distance between two consecutive maxima
+* @param 	minDistance					Minimum distance between two consecutive maxima
 * @param	buf_len 					Length of buffer incoming buffer
 * @param	diffthresh					Threshold to measure similarity between differences in positions of candidate peaks
-* @param	candidatePeakPos                                Positions of candidate peaks in buffer
-* @param        diffPos                                         Differences between consecutive positions of candidate peaks
-* @param        possiblePeriod                                  List of possible pitch candidates					
+* @param	candidatePeakPos            Positions of candidate peaks in buffer
+* @param    diffPos                     Differences between consecutive positions of candidate peaks
+* @param    possiblePeriod              List of possible pitch candidates					
 * @param	buffPosition, prevBuffPosition		        Tracks position of samples for phase alignment
 */
 //==================================================================================================================================
@@ -42,12 +43,21 @@ LoopAudio::LoopAudio(int bufferLen)
 	diffPos = new int[32];
 	possiblePeriod = new int[32];
 
+	//initialising parameters for AMDF pitch detection
+	//minimum lag = fs/1500
+	tau_min = 32;
+	//maximum lag = fs/80;
+	tau_max = 600;
+	//AMDF array
+	D = new long long[tau_max - tau_min + 1];
+
 }
 	
 LoopAudio::~LoopAudio(){
 	delete [] candidatePeakPos;
 	delete [] diffPos;
 	delete [] possiblePeriod;
+	delete [] D;
 }
 
 //function to find pitch period - calculations should work on fixed point
@@ -105,6 +115,39 @@ int LoopAudio::getPitchRobust(int *curInBuf){
 	return periodLength;
 			
 }
+
+//function to implement AMDF pitch detection
+int LoopAudio::getPitchAMDF(int *curInBuf){
+
+	//generate AMDF function
+	for(int i = tau_min; i <= tau_max; i++){
+		for(int j = i; j < buf_len; j++){
+			D[i - tau_min] += (long long)(abs(curInBuf[j] - curInBuf[j-i]));
+		}
+		//divide by buflen, since it's a power of 2 we can just do bitshift
+		D[i - tau_min] = D[i - tau_min] >> 10;
+	}
+
+	//find dip in AMDF by computing the minimum
+	long long min = MAX_LLONG64; 
+	int minPos = -1;
+	for(int i = 0; i <= tau_max - tau_min; i++){
+		if(D[i] < min){
+			minPos = i;
+			min = D[i];
+		}
+	}
+
+	//now compute number of samples in pitch period
+	int periodLength = 0;
+	if(minPos > -1){
+		periodLength = minPos + tau_min;
+	}
+
+	return periodLength;
+
+}
+
 
 //function to loop audio with phase alignment
 void LoopAudio::loopBuffer(int *curInBuf, int *curOutBuf, int periodLength){

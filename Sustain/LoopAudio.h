@@ -17,6 +17,7 @@ class LoopAudio{
 		~LoopAudio();
 		void loopBuffer(int *curInBuf, int *curOutBuf, int period);
 		int getPitchRobust(int *curInBuf);
+		int getPitchAMDF(int *cufInBuf);
 		
 	private:
 		int buf_len;
@@ -28,6 +29,10 @@ class LoopAudio{
 		int *candidatePeakPos;
 		int *diffPos;
 		int *possiblePeriod;
+		//required parameters for AMDF pitch detection
+		int tau_min;
+		int tau_max;
+		long long *D;
 };
 
 
