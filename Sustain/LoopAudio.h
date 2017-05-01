@@ -1,3 +1,10 @@
+//
+//  LoopAudio.h
+//  
+//
+//  Created by Orchi Das on 3/10/17.
+//
+//
 
 #include <math.h>
 
@@ -6,18 +13,14 @@
 
 class LoopAudio{
 	public:
-		LoopAudio(int buf_len,int th);
+		LoopAudio(int buf_len);
 		~LoopAudio();
-		int getPitchPeriod(int *curInBuf);
 		void loopBuffer(int *curInBuf, int *curOutBuf, int period);
 		int getPitchRobust(int *curInBuf);
+		int getPitchAMDF(int *cufInBuf);
 		
 	private:
 		int buf_len;
-		int s1;
-		int val;
-		int prevVal;
-		int thresh;
 		int buffPosition;
 		int prevBuffPosition;
 		//required parameters for robust pitch detection
@@ -26,6 +29,10 @@ class LoopAudio{
 		int *candidatePeakPos;
 		int *diffPos;
 		int *possiblePeriod;
+		//required parameters for AMDF pitch detection
+		int tau_min;
+		int tau_max;
+		long long *D;
 };
 
 
