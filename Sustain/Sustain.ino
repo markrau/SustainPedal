@@ -291,7 +291,7 @@ void processAudio()
         }
                
         fir((DATA*)InputLeft, (DATA*)coeff, (DATA*)filtOut, (DATA*)filterState, BufferLength, filterLength);
-        period = loopAudio.getPitchRobust(filtOut);
+        period = loopAudio.getPitchAMDF(filtOut);
      }
     
 

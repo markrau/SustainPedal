@@ -32,7 +32,8 @@ class LoopAudio{
 		//required parameters for AMDF pitch detection
 		int tau_min;
 		int tau_max;
-		long long *D;
+		long *D;
+                long thresh;
 };
 
 
