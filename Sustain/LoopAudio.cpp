@@ -4,11 +4,13 @@
 #include "LoopAudio.h"
 #include <stdio.h>
 #include <stdlib.h>
-//using namespace std;
+
 
 #define DEFAULT_BUFFER_SIZE 1024
 #define MAX_INT16   	    32767
-#define MAX_LLONG64         549755813887
+
+#define MAX_LONG32          2147483647
+
 
 
 //=================================================================================================================================
@@ -16,9 +18,9 @@
 * @param 	minDistance					Minimum distance between two consecutive maxima
 * @param	buf_len 					Length of buffer incoming buffer
 * @param	diffthresh					Threshold to measure similarity between differences in positions of candidate peaks
-* @param	candidatePeakPos            Positions of candidate peaks in buffer
-* @param    diffPos                     Differences between consecutive positions of candidate peaks
-* @param    possiblePeriod              List of possible pitch candidates					
+* @param	candidatePeakPos                                Positions of candidate peaks in buffer
+* @param        diffPos                                         Differences between consecutive positions of candidate peaks
+* @param        possiblePeriod                                  List of possible pitch candidates					
 * @param	buffPosition, prevBuffPosition		        Tracks position of samples for phase alignment
 */
 //==================================================================================================================================
@@ -49,7 +51,9 @@ LoopAudio::LoopAudio(int bufferLen)
 	//maximum lag = fs/80;
 	tau_max = 600;
 	//AMDF array
-	D = new long long[tau_max - tau_min + 1];
+	D = new long[tau_max - tau_min + 1];
+        //threshold for detecting minimum
+        thresh = 300; //equivalent to decimal 0.01
 
 }
 	
@@ -116,38 +120,54 @@ int LoopAudio::getPitchRobust(int *curInBuf){
 			
 }
 
+
 //function to implement AMDF pitch detection
 int LoopAudio::getPitchAMDF(int *curInBuf){
 /*
 	//generate AMDF function
 	for(int i = tau_min; i <= tau_max; i++){
 		for(int j = i; j < buf_len; j++){
-			D[i - tau_min] += (long long)(abs(curInBuf[j] - curInBuf[j-i]));
+			D[i - tau_min] += (long)(abs(curInBuf[j] - curInBuf[j-i]));
 		}
 		//divide by buflen, since it's a power of 2 we can just do bitshift
 		D[i - tau_min] = D[i - tau_min] >> 10;
 	}
 
 	//find dip in AMDF by computing the minimum
-	long long minimum = MAX_LLONG64; 
-	int minPos = -1;
-	for(int i = 0; i <= tau_max - tau_min; i++){
-		if(D[i] < minimum){
-			minPos = i;
-			minimum = D[i];
+
+	long minimum = MAX_LONG32; 
+	float minPos = -1.0;
+        //find global minimum
+	/*for(int i = 0; i <= tau_max - tau_min; i++){
+		if(D[i] < min){
+		        minPos = i;
+			min = D[i];
 		}
-	}
+	}*/
+         
+        //find first local minimum below threshold (first dip in AMDF)
+        for (int i = 1; i < tau_max - tau_min;i++){
+                if(D[i-1] > D[i] && D[i+1] > D[i] && D[i] <= thresh){
+                //if first local minumum is detected, do parabolic interpolation
+                        minPos = ((D[i-1] - D[i+1])/(D[i-1] - (D[i]<<1) + D[i+1])) >> 1;
+                        minPos = (float)i + minPos;
+                        minimum = D[i];
+                        break;
+                 }
+        }
+        
 
 	//now compute number of samples in pitch period
 	int periodLength = 0;
-	if(minPos > -1){
-		periodLength = minPos + tau_min;
+	if(minPos > -1.0){
+		periodLength = (int)minPos + tau_min;
 	}
 
 	return periodLength;*/
         return 0;
 
 }
+
 
 
 //function to loop audio with phase alignment
