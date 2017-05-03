@@ -6,7 +6,7 @@
 //
 //
 
-#include "Onset.h"
+#include "OnsetLeakyInt.h"
 #include <math.h>      
 #include <OLED.h>
 
@@ -15,6 +15,8 @@
 
 
 #define DEFAULT_BUFFER_SIZE 1024
+#define MAX_INT32		  2147483647
+#define MAX_INT16   	  32767
 
 
 
@@ -68,12 +70,12 @@ int Onset::isOnset(int* input){
     for (int i = 0; i < _bufferLen; i++) {
         //_buffer[i] = input[i];
         
-        if ( fabs( input[i] ) > levelEstimate ){
-            levelEstimate += b0_a * ( fabs( input[i] ) - levelEstimate );
+        if ( abs( input[i] ) > levelEstimate ){
+            levelEstimate += Q15mult(b0_a , ( abs( input[i] ) - levelEstimate ));
             foundOnset = 1;
         }
         else{
-            levelEstimate += b0_r * ( fabs( input[i] ) - levelEstimate );
+            levelEstimate += Q15mult(b0_r , ( fabs( input[i] ) - levelEstimate ));
         }
     }
     return foundOnset;
@@ -105,13 +107,16 @@ int Onset::isOnset(int* input){
 
 
 
-void setTauRelease(float tauRelease, float fs) {
-    a1_r = exp( -1.0 / ( tauRelease * fs ) );
-    b0_r = 1 - a1_r;
+void setTauRelease(float tauRelease, float fs) {2
+    
+    //a1_r = exp( -1.0 / ( tauRelease * fs ) );
+    a1_r = 32760;
+    b0_r = Max_INT16 - a1_r;
 }
 
 void setTauAttack(float tauAttack, float fs) {
-    a1_a = exp( -1.0 / ( tauAttack * fs ) );
+    //a1_a = exp( -1.0 / ( tauAttack * fs ) );
+    a1_a = 32693;
     b0_a = 1 - a1_a;
 }
 

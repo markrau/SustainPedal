@@ -8,7 +8,7 @@
 
 #define DEFAULT_BUFFER_SIZE 1024
 #define MAX_INT16   	    32767
-#define MAX_LLONG64         9223372036854775807
+#define MAX_LLONG64         549755813887
 
 
 //=================================================================================================================================
@@ -118,7 +118,7 @@ int LoopAudio::getPitchRobust(int *curInBuf){
 
 //function to implement AMDF pitch detection
 int LoopAudio::getPitchAMDF(int *curInBuf){
-
+/*
 	//generate AMDF function
 	for(int i = tau_min; i <= tau_max; i++){
 		for(int j = i; j < buf_len; j++){
@@ -129,12 +129,12 @@ int LoopAudio::getPitchAMDF(int *curInBuf){
 	}
 
 	//find dip in AMDF by computing the minimum
-	long long min = MAX_LLONG64; 
+	long long minimum = MAX_LLONG64; 
 	int minPos = -1;
 	for(int i = 0; i <= tau_max - tau_min; i++){
-		if(D[i] < min){
+		if(D[i] < minimum){
 			minPos = i;
-			min = D[i];
+			minimum = D[i];
 		}
 	}
 
@@ -144,7 +144,8 @@ int LoopAudio::getPitchAMDF(int *curInBuf){
 		periodLength = minPos + tau_min;
 	}
 
-	return periodLength;
+	return periodLength;*/
+        return 0;
 
 }
 
