@@ -277,6 +277,7 @@ void processAudio()
    if(onsetFlag){
       numBuffUntilSteadyState = 0;
       foundSS =0;
+      numMatlabCalls = 0;
    }     
    numBuffUntilSteadyState++;
 

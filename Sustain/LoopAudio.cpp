@@ -51,7 +51,7 @@ LoopAudio::LoopAudio(int bufferLen)
 	//AMDF array
 	D = new long[tau_max - tau_min + 1];
         //threshold for detecting minimum
-        thresh = 300; //equivalent to decimal 0.01
+        thresh = 600; //equivalent to decimal 0.01
 
 }
 	
@@ -134,13 +134,15 @@ int LoopAudio::getPitchAMDF(int *curInBuf){
 	//find dip in AMDF by computing the minimum
 	long minimum = MAX_LONG32; 
 	float minPos = -1.0;
+        //int minPos = -1;
         //find global minimum
 	/*for(int i = 0; i <= tau_max - tau_min; i++){
-		if(D[i] < min){
+		if(D[i] < minimum){
 		        minPos = i;
-			min = D[i];
+			minimum = D[i];
 		}
 	}*/
+         
          
         //find first local minimum below threshold (first dip in AMDF)
         for (int i = 1; i < tau_max - tau_min;i++){
@@ -157,6 +159,7 @@ int LoopAudio::getPitchAMDF(int *curInBuf){
 	//now compute number of samples in pitch period
 	int periodLength = 0;
 	if(minPos > -1.0){
+                //periodLength = minPos + tau_min;
 		periodLength = (int)minPos + tau_min;
 	}
 
