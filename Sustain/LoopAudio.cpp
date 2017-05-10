@@ -165,10 +165,12 @@ int LoopAudio::getPitchAMDF(int *curInBuf){
                 //periodLength = minPos + tau_min;
 		periodLength = (int)minPos + tau_min;
 	}
-        
-        prevBuffPosition = 0;
+
+	
+	//set prevBuffPosition to zero here to avoid hearing discontinuities between
+	//initial attack and looped signal
 	return periodLength;
-        
+	
 
 }
 
