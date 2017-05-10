@@ -23,7 +23,7 @@
 
  * ================================================================================
  */
-Onset::Onset(int bufferLen, long previousBuffFFTSum) {
+Onset::Onset(int bufferLen, long previousBuffFFTSum, long FS) {
     if (bufferLen < 1) {
         _bufferLen = DEFAULT_BUFFER_SIZE;
     } else {
@@ -31,6 +31,8 @@ Onset::Onset(int bufferLen, long previousBuffFFTSum) {
     }
     _buffer = new int[bufferLen];
     _previousBuffFFTSum = previousBuffFFTSum;
+    levelEstimate = 5000;    //Initialize this to 5000(5000/2^15) so you don't always get an onset at the beginning of the audio
+    fs = FS;
 }
 
 /** Standard destructor */
@@ -54,7 +56,7 @@ Onset::~Onset() {
  */
 
 
-int Onset::isOnset(int* input, int thresh){
+int Onset::isOnsetFFT(int* input, int thresh){
     
     for (int i = 0; i < _bufferLen; i++) {
         _buffer[i] = input[i];
@@ -78,6 +80,40 @@ int Onset::isOnset(int* input, int thresh){
     }
 }
 
+
+int Onset::isOnsetLeaky(int* input){
+    int foundOnset = 0;
+    for (int i = 0; i < _bufferLen; i++) {
+        //_buffer[i] = input[i];
+        
+        if ( abs( input[i] ) > levelEstimate ){
+            levelEstimate += q.Q15mult(b0_a , ( abs( input[i] ) - levelEstimate ));
+            foundOnset = 1;
+        }
+        else{
+            levelEstimate += q.Q15mult(b0_r , ( abs( input[i] ) - levelEstimate ));
+        }
+    }
+    return foundOnset;
+}
+
+
+
+
+
+
+void Onset::setTauRelease(int tauRelease) {
+    
+    //a1_r = exp( -1.0 / ( tauRelease * fs ) );
+    a1_r = 32760;
+    b0_r = MAX_INT16 - a1_r;
+}
+
+void Onset::setTauAttack(int tauAttack) {
+    //a1_a = exp( -1.0 / ( tauAttack * fs ) );
+    a1_a = 32693;
+    b0_a = 1 - a1_a;
+}
 
 
 

@@ -71,6 +71,8 @@ int analogPin2 = 2;                                      // on off switch.
 int numMatlabCalls = 0;                                  // A counter to only call Matlab communitation a number of times
 
 
+long fs = SAMPLING_RATE_48_KHZ;     //Sample Rate
+
 volatile int GetAudioBufferFlag = 0;                     // Trigger audio buffer capture in processAudio()
 volatile int CapturedBufferFlag = 0;                     // Indicate that audio buffer has been captured in processAudio()
 
@@ -91,7 +93,8 @@ int AudioCaptureBufferLeft[BufferLength]  = {0};
 
 // Declare Onset object =========================================
 //===============================================================
-Onset onset(BufferLength,previousBuffFFTSum);
+Onset onset(BufferLength,previousBuffFFTSum, fs);
+
 //===============================================================
 
 //Declare LoopBuffer pitch detection object
@@ -131,10 +134,14 @@ void setup()
     disp.setline(1);
     
     filterState = new int[filterLength + 2]; // initialize filterstate 
+    
+    // Set Attack and Release, these are just dummies
+    onset.setTauRelease(10000);
+    onset.setTauAttack(10000);
        
     // Audio library is configured for non-loopback mode and the specified buffer length for the ADC and DAC, respectively.
     status = AudioC.Audio(TRUE, BufferLength, BufferLength);
-    AudioC.setInputGain(0, 0);
+    AudioC.setInputGain(50, 50);
     
     // Set codec sampling rate.  Valid sampling rates:
     //   SAMPLING_RATE_8_KHZ
@@ -144,7 +151,8 @@ void setup()
     //   SAMPLING_RATE_32_KHZ
     //   SAMPLING_RATE_44_KHZ
     //   SAMPLING_RATE_48_KHZ (default)
-    AudioC.setSamplingRate(SAMPLING_RATE_48_KHZ);
+    
+    AudioC.setSamplingRate(fs);
     AudioC.setInputGain(0,0);
     
     if (status == 0)
@@ -272,12 +280,13 @@ void loop()
 void processAudio()
 {
 
-    onsetFlag = onset.isOnset(AudioC.inputLeft, onsetThresh);
+    onsetFlag = onset.isOnsetFFT(AudioC.inputLeft, onsetThresh);
+    //onsetFlag = onset.isOnsetLeaky(AudioC.inputLeft);
     
    if(onsetFlag){
       numBuffUntilSteadyState = 0;
       foundSS =0;
-      numMatlabCalls = 0;
+      //numMatlabCalls = 0;
    }     
    numBuffUntilSteadyState++;
 

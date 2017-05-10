@@ -1,8 +1,9 @@
 %script to test AMDF pitch detector
 close all, clc;
 
-[x,fs] = audioread('guitar files/G53-50300-1111-00027.wav');
+[x,fs] = audioread('LowE_wrong.wav');
 x = x';
+x = round(x*2^15);
 win = 1024;
 nframes = ceil(length(x)/win);
 x = [x, zeros(1,nframes*win - length(x))];

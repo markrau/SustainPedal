@@ -49,7 +49,7 @@ LoopAudio::LoopAudio(int bufferLen)
 	//minimum lag = fs/1500
 	tau_min = 32;
 	//maximum lag = fs/80;
-	tau_max = 600;
+	tau_max = 500;
 	//AMDF array
 	D = new long[tau_max - tau_min + 1];
         //threshold for detecting minimum
@@ -123,7 +123,7 @@ int LoopAudio::getPitchRobust(int *curInBuf){
 
 //function to implement AMDF pitch detection
 int LoopAudio::getPitchAMDF(int *curInBuf){
-/*
+
 	//generate AMDF function
 	for(int i = tau_min; i <= tau_max; i++){
 		for(int j = i; j < buf_len; j++){
@@ -152,7 +152,7 @@ int LoopAudio::getPitchAMDF(int *curInBuf){
                 if(D[i-1] > D[i] && D[i+1] > D[i] && D[i] <= thresh){
                 //if first local minumum is detected, do parabolic interpolation
                         minPos = ((D[i-1] - D[i+1])/(D[i-1] - (D[i]<<1) + D[i+1])) >> 1;
-                        minPos = (float)i + minPos;
+                        minPos = (float)i;
                         minimum = D[i];
                         break;
                  }
@@ -165,9 +165,10 @@ int LoopAudio::getPitchAMDF(int *curInBuf){
                 //periodLength = minPos + tau_min;
 		periodLength = (int)minPos + tau_min;
 	}
-
-	return periodLength;*/
-        return 0;
+        
+        prevBuffPosition = 0;
+	return periodLength;
+        
 
 }
 

@@ -19,9 +19,24 @@ figure(1);
 plot(tau_min:tau_max, D);grid on;
 xlabel('Lags in samples');ylabel('AMDF function');
 
-[val,pitch] = min(D);
-pitch = pitch+tau_min;
-pitch = fs/pitch;
+thresh = 600;
+minPos = -1;
+ for i = 2:tau_max-tau_min-1
+                if(D(i-1) > D(i) && D(i+1) > D(i) && D(i) <= thresh)
+                        minPos = ((D(i-1) - D(i+1))/(D(i-1) - (D(i)*2) + D(i+1)))/2;
+                        minPos = i + minPos;
+                        minimum = D(i);
+                        break;
+                end
+ end
+                 
+ 
+pitch = minPos + tau_min;
+i + tau_min
+k = 1
+%[val,pitch] = min(D);
+%pitch = pitch+tau_min;
+%pitch = fs/pitch;
 
 
 

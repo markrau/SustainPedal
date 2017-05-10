@@ -19,11 +19,16 @@
 
 class Onset {
 public:
-    Onset(int bufferLen, long previousBuffFFTSum);
+    Onset(int bufferLen, long previousBuffFFTSum, long FS);
     ~Onset();
-    int isOnset(int* input, int thresh);
+    int isOnsetFFT(int* input, int thresh);
+    int isOnsetLeaky(int* input);
+    void setTauRelease(int tauRelease);
+    void setTauAttack(int tauAttack);
     long returnCurrFFT();
     long returnPrevFFT();
+    
+    
 
     
     
@@ -34,6 +39,12 @@ private:
     long _previousBuffFFTSum;
     long currBuffFFTSum;
     long threshMultByBuff;
+    int levelEstimate;
+    int b0_r, a1_r, b0_a, a1_a;
+    long fs;
+    
+    //int tauRelease, tauAttack;
+    //long fs;
 
 };
 
