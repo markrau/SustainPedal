@@ -9,4 +9,4 @@
 
 <p>Here is a picture of the setup. The button on the extreme right with the LED turns sustain on and off. The potentiometer to the left of the on/off button adjusts a threshold for onset detection.</p>
 
-<img src = "https://github.com/markrau/SustainPedal/blob/master/IMG_20170308_161513.jpg"></img>
+<img src = "https://github.com/markrau/SustainPedal/blob/master/controller.jpg"></img>

@@ -11,7 +11,11 @@ function [ onsetBuff, ssBuff ] = find_onset(xbuf, fs, thresh )
 % fft the buffers, need buffers in the columns for matrix fft
 NFFT = 2^(nextpow2(length(xbuf(1,:)))+1);
 hannWin = hann(length(xbuf(1,:)));
-Xbuf = fft(xbuf'.*hannWin,NFFT);
+nframes = size(xbuf,1);
+Xbuf = zeros(NFFT, nframes);
+for n = 1:nframes
+    Xbuf(:,n) = fft(xbuf(n,:).*hannWin',NFFT);
+end
 % mean spectral energy magnitude
 specEnergyMeans = mean(abs(Xbuf(1:NFFT/2,:)));
 
@@ -32,7 +36,7 @@ for i=1:length(specEnergyMeans)-1
         ssBuff = i+1;
         foundSS=true;
     end
-    
+k=1    
 end
 
 

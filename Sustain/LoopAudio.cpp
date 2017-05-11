@@ -116,6 +116,7 @@ int LoopAudio::getPitchRobust(int *curInBuf){
 	}
 	
 	periodLength /= k;
+	prevBuffPosition = 0;
 	return periodLength;
 			
 }
@@ -169,6 +170,7 @@ int LoopAudio::getPitchAMDF(int *curInBuf){
 	
 	//set prevBuffPosition to zero here to avoid hearing discontinuities between
 	//initial attack and looped signal
+	prevBuffPosition = 0;
 	return periodLength;
 	
 

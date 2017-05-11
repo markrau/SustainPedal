@@ -33,7 +33,7 @@ minPos = -1;
  
 pitch = minPos + tau_min;
 i + tau_min
-k = 1
+pause;
 %[val,pitch] = min(D);
 %pitch = pitch+tau_min;
 %pitch = fs/pitch;
