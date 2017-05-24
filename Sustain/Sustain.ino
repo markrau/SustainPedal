@@ -33,10 +33,12 @@ const int maxDataLength = 2048;
 const long Gain         = 32768;              //< Gain parameter
 const long baudRate      = 115200;            // baudRate for Matlab
 const int maxBuffUntilSteadyState = 20;       //  number of buffers after onset until it is declared as steady state
+const int nBufForPitch = 4;
 
 int *filterState;                             // filter state for the LP filter for period detection
 const int filterLength = 188;                 // length of filter for period detection
-
+int *periods;                                 // keep track of periods of last 3 buffers
+                                 
 // Filter coefficients, taken from a Matlab Parks McClellan LP filter design with passband until 1kHz
 const int coeff[filterLength] = 
             {-142,76,63,55,50,48,47,46,45,44,42,38,34,29,23,15,7,-3,-13,-23,-33,-44,-53,-62,-70,-76,-81,-83,-84,
@@ -60,6 +62,7 @@ int prevOnsetFlag = 0;                                   // Keep track of whethe
 int onsetThresh = MAX_INT16*0.25 ;                       // Onset detection threshold. Initialize to 4 (Q11), meaning that an onset is detected if a new buffer has 4 times the spectral energy as the previous buffer
 int numBuffUntilSteadyState = 0;                         // counter for number of buffers until steady state
 int period = 0;                                          // Period of the fundamental frequency detected in a buffer
+int nperiod = 0;                                         // iterative variable that keeps track of periods from different buffers   
 int pedalPressed = 1;                                    // variable to dictate if the effect is activated
 int foundOnset = 0;                                      // Keep track of if an onset was found
 int foundSS = 0;                                         // Keep track of weather steady state was hit
@@ -67,11 +70,12 @@ int threshPot = 0;                                       // Onset detection thre
 int onSwitchRead = 0;                                    // variable to check if thew arduino on switch is pressed
 int analogPin3 = 3;                                      // potentiometer wiper (middle terminal) connected to analog pin 3, outside leads to ground and +5V
 int analogPin2 = 2;                                      // on off switch. 
-
 int numMatlabCalls = 0;                                  // A counter to only call Matlab communitation a number of times
-
-
-long fs = SAMPLING_RATE_48_KHZ;     //Sample Rate
+long mean = 0;                                          // mean of periods array
+long dev = 0;                                           // average L1 deviation of periods array
+long devThresh = 5;                                     // maximum allowed threshold for deviation among periods  
+   
+long fs = SAMPLING_RATE_48_KHZ;     //Sample Rate                         
 
 volatile int GetAudioBufferFlag = 0;                     // Trigger audio buffer capture in processAudio()
 volatile int CapturedBufferFlag = 0;                     // Indicate that audio buffer has been captured in processAudio()
@@ -94,7 +98,6 @@ int AudioCaptureBufferLeft[BufferLength]  = {0};
 // Declare Onset object =========================================
 //===============================================================
 Onset onset(BufferLength,previousBuffFFTSum, fs);
-
 //===============================================================
 
 //Declare LoopBuffer pitch detection object
@@ -134,6 +137,7 @@ void setup()
     disp.setline(1);
     
     filterState = new int[filterLength + 2]; // initialize filterstate 
+    periods = new int[nBufForPitch]; // initialize array for storing periods
     
     // Set Attack and Release, these are just dummies
     onset.setTauRelease(10000);
@@ -141,7 +145,7 @@ void setup()
        
     // Audio library is configured for non-loopback mode and the specified buffer length for the ADC and DAC, respectively.
     status = AudioC.Audio(TRUE, BufferLength, BufferLength);
-    AudioC.setInputGain(50, 50);
+    AudioC.setInputGain(0, 0);
     
     // Set codec sampling rate.  Valid sampling rates:
     //   SAMPLING_RATE_8_KHZ
@@ -151,8 +155,7 @@ void setup()
     //   SAMPLING_RATE_32_KHZ
     //   SAMPLING_RATE_44_KHZ
     //   SAMPLING_RATE_48_KHZ (default)
-    
-    AudioC.setSamplingRate(fs);
+    AudioC.setSamplingRate(SAMPLING_RATE_48_KHZ);
     AudioC.setInputGain(0,0);
     
     if (status == 0)
@@ -280,8 +283,8 @@ void loop()
 void processAudio()
 {
 
-    onsetFlag = onset.isOnsetFFT(AudioC.inputLeft, onsetThresh);
-    //onsetFlag = onset.isOnsetLeaky(AudioC.inputLeft);
+    //onsetFlag = onset.isOnset(AudioC.inputLeft, onsetThresh);
+    onsetFlag = onset.isOnsetLeaky(AudioC.inputLeft);
     
    if(onsetFlag){
       numBuffUntilSteadyState = 0;
@@ -291,9 +294,7 @@ void processAudio()
    numBuffUntilSteadyState++;
 
     //if previous buffer was onset and current buffer is steady state
-     if(numBuffUntilSteadyState > maxBuffUntilSteadyState && pedalPressed && !foundSS){     
-        foundSS = 1;
-        
+     if(numBuffUntilSteadyState > maxBuffUntilSteadyState && pedalPressed && !foundSS){
         for(int n = 0; n < BufferLength; n++)
         {
           InputLeft[n] = AudioC.inputLeft[n]; 
@@ -301,21 +302,50 @@ void processAudio()
         }
                
         fir((DATA*)InputLeft, (DATA*)coeff, (DATA*)filtOut, (DATA*)filterState, BufferLength, filterLength);
-        period = loopAudio.getPitchAMDF(filtOut);
+        periods[nperiod++] = loopAudio.getPitchAMDF(filtOut);
+     
+        //check if all positions in buffer have been filled   
+        if(nperiod >= nBufForPitch){  
+          //calculate mean of periods array
+          mean = 0;
+          for(int n = 0; n < nBufForPitch; n++){
+              mean += periods[n];
+          }
+          mean = mean >> 2;
+          //calculate variance of periods array
+          dev = 0;
+          for(int n = 0; n < nBufForPitch; n++){
+            dev += abs(periods[n] - mean);  //not squaring to avoid extra computation
+          }
+          dev = dev >> 2;
+          //if deviation is lesser than maximum allowed deviation - we have found the right pitch
+          if(dev <= devThresh){
+            foundSS = 1; //if correct pitch is found
+            nperiod = 0;
+          }
+          else{
+            foundSS = 0;
+            nperiod = nBufForPitch - 1;
+            //shift all elements in periods array to the left by one
+            for(int n = 1; n < nBufForPitch; n++){
+              periods[n-1] = periods[n];
+            }
+          }
+        }
      }
     
 
-    if(foundSS && pedalPressed && period!=0){
-      loopAudio.loopBuffer(InputLeft,OutputLeft,period);
-      for(int n = 0; n < BufferLength; n++) {
-        AudioC.outputLeft[n]  = (Gain * OutputLeft[n])  >> 15;
-       // AudioC.outputRight[n] = (Gain * OutputLeft[n]) >> 15;
+    if(foundSS && pedalPressed){
+        //final period we choose - period of the last stable buffer
+        period = periods[nBufForPitch-1];
+        loopAudio.loopBuffer(InputLeft,OutputLeft,period);
+        for(int n = 0; n < BufferLength; n++) {
+          AudioC.outputLeft[n]  = (Gain * OutputLeft[n])  >> 15;
       }  
     }
     else{
       for(int n = 0; n < BufferLength; n++) {
           AudioC.outputLeft[n]  = (Gain * AudioC.inputLeft[n])  >> 15;
-        // AudioC.outputRight[n] = (Gain * AudioC.inputLeft[n]) >> 15;
       }
     }
 
@@ -331,6 +361,7 @@ void processAudio()
         GetAudioBufferFlag = 0;
         CapturedBufferFlag = 1;
     }
+    
 }
 
 
