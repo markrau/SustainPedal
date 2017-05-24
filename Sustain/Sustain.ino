@@ -338,10 +338,12 @@ void processAudio()
     if(foundSS && pedalPressed){
         //final period we choose - period of the last stable buffer
         period = periods[nBufForPitch-1];
-        loopAudio.loopBuffer(InputLeft,OutputLeft,period);
-        for(int n = 0; n < BufferLength; n++) {
-          AudioC.outputLeft[n]  = (Gain * OutputLeft[n])  >> 15;
-      }  
+        if(period!=0){
+          loopAudio.loopBuffer(InputLeft,OutputLeft,period);
+          for(int n = 0; n < BufferLength; n++) {
+            AudioC.outputLeft[n]  = (Gain * OutputLeft[n])  >> 15;
+          }
+        }  
     }
     else{
       for(int n = 0; n < BufferLength; n++) {
