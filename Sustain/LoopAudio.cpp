@@ -46,10 +46,10 @@ LoopAudio::LoopAudio(int bufferLen)
 	possiblePeriod = new int[32];
 
 	//initialising parameters for AMDF pitch detection
-	//minimum lag = fs/1500
+	//minimum lag = fs/1400
 	tau_min = 32;
 	//maximum lag = fs/80;
-	tau_max = 500;
+	tau_max = 600;
 	//AMDF array
 	D = new long[tau_max - tau_min + 1];
         //threshold for detecting minimum
